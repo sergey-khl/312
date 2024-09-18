@@ -8,7 +8,6 @@ from ev3dev2.wheel import EV3Tire
 from ev3dev2.sensor.lego import GyroSensor
 from ev3dev2.sensor import INPUT_1
 
-
 class Robo(MoveDifferential):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
