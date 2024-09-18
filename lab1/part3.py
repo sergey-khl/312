@@ -26,7 +26,7 @@ class Robo(MoveDifferential):
     def goDegreeTurn(self, deg, compensate=False):
         print("turning")
         self.turn_degrees(
-            speed=SpeedRPM(70),
+            speed=SpeedRPM(15),
             degrees=deg + self.previous_degrees if compensate else deg,
             error_margin=2,
             use_gyro=True,
@@ -48,6 +48,7 @@ class Robo(MoveDifferential):
     def goArcTurnRight(self, r, deg):
         print("arcing right")
         while self.gyro.angle <= deg:
+            print(self.gyro.angle)
             self.on_arc_right(
                 speed=SpeedRPM(30),
                 radius_mm=r,
@@ -57,6 +58,7 @@ class Robo(MoveDifferential):
     def goArcTurnLeft(self, r, deg):
         print("arcing left")
         while self.gyro.angle >= deg:
+            print(self.gyro.angle)
             self.on_arc_left(
                 speed=SpeedRPM(30),
                 radius_mm=r,
@@ -83,17 +85,21 @@ class Robo(MoveDifferential):
                     func(*args)
 
     def moveLemniscate(self, loops=1):
+        # lemniscate_loop = [
+        #     [self.recalibrate, []],
+        #     [self.goStraight, [200]],
+        #     [self.goDegreeTurnBetter, [30]],
+        #     [self.goArcTurnRight, [50, 180]],
+        #     [self.goDegreeTurnBetter, [30]],
+        #     # [self.recalibrate, []],
+        #     [self.goStraight, [200]],
+        #     [self.goDegreeTurnBetter, [-30]],
+        #     [self.goArcTurnLeft, [50, 0]],
+        #     [self.goDegreeTurnBetter, [-30]],
+        # ]
         lemniscate_loop = [
-            [self.recalibrate, []],
-            [self.goStraight, [200]],
-            [self.goDegreeTurnBetter, [30]],
-            [self.goArcTurnRight, [50, 180]],
-            [self.goDegreeTurnBetter, [30]],
-            # [self.recalibrate, []],
-            [self.goStraight, [200]],
-            [self.goDegreeTurnBetter, [-30]],
-            [self.goArcTurnLeft, [50, 0]],
-            [self.goDegreeTurnBetter, [-30]],
+            [self.goArcTurnRight, [200, 350]],
+            [self.goArcTurnLeft, [200, 10]],
         ]
         for i in range(loops):
             for func, args in lemniscate_loop:
@@ -106,6 +112,6 @@ class Robo(MoveDifferential):
 
 
 if __name__ == "__main__":
-    robo = Robo(OUTPUT_B, OUTPUT_A, EV3Tire, 100)
+    robo = Robo(OUTPUT_B, OUTPUT_A, EV3Tire, 197.5)
     robo.moveLemniscate(3)
-    robo.moveRectangle(3)
+    # robo.moveRectangle(3)
