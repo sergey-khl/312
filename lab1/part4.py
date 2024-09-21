@@ -3,6 +3,7 @@
 from time import sleep
 from math import cos, sin, pi
 
+from ev3dev2.sensor.lego import GyroSensor
 from ev3dev2.motor import OUTPUT_A, OUTPUT_B, SpeedRPM, SpeedPercent, MoveTank
 
 class Robot(MoveTank):
@@ -11,7 +12,17 @@ class Robot(MoveTank):
         self.max_rot_sec = 2.13
         self.d = 97.5
         self.integration_steps = 10
-        self.radius = 34.4
+        self.radius = 33
+        self.gyro = GyroSensor()
+        self.previous_degrees = 0
+        self.recalibrate()
+
+    def logEncodings(self):
+        # print("angle and rate", self.gyro.angle_and_rate)
+        print("angle", self.gyro.angle)
+        # print("previous deg", self.previous_degrees)
+        print("left motor distance traveled", str(self.left_motor.rotations * 216))
+        print("right motor distance traveled", str(self.right_motor.rotations * 216))
 
     def findDistance(self, velocity, angular_velocity, seconds, prev_x, prev_y, prev_orientation):
         x = prev_x
@@ -36,7 +47,6 @@ class Robot(MoveTank):
             y += t_2 * velocity * sin(orientation_2) - t_1 * velocity * sin(orientation_1)
             
             # print(f"x: {x}, y: {y}, orientation: {orientation_2}")
-            print("x", x, "y", y, "orientation", orientation_2)
 
         return x, y, orientation_2
 
@@ -45,9 +55,6 @@ class Robot(MoveTank):
         v_left = speed_left / 100 * self.radius * 2 * pi * self.max_rot_sec
         v_right = speed_right / 100 * self.radius * 2 * pi * self.max_rot_sec
 
-        print("v_left", v_left)
-        print("v_right", v_right)
-
         # turning on angle
         if v_left != v_right:
             angular_velocity = (v_right - v_left) / (2 * self.d)
@@ -55,25 +62,29 @@ class Robot(MoveTank):
 
             velocity = rotation_radius * angular_velocity
             # print(f"velocity: {velocity}, rotation radius: {rotation_radius}")
-            print("velocity", velocity, "rotation_radius", rotation_radius)
         # straight line
         else:
             velocity = v_left
             angular_velocity = 0
+            rotation_radius = None
+
 
         distance_x, distance_y, orientation = self.findDistance(
             velocity, angular_velocity, seconds, prev_x, prev_y, prev_orientation
         )
 
         # print(f"Distance X: {distance_x}, Distance Y: {distance_y}, Orientation: {orientation}")
-        print("distance x", distance_x, "distancy y", distance_y, "orientation", orientation)
+        print("ESTIMATED:", "v_left", v_left, "v_right", v_right, "velocity", velocity, "rotation_radius", rotation_radius, "angular_velocity", angular_velocity, "distance x", distance_x, "distance y", distance_y, "orientation", orientation)
 
         return distance_x, distance_y, orientation
 
     def go(self, speed_left, speed_right, seconds):
         # print(f"Going: Left Speed {speed_left}, Right Speed {speed_right}, for {seconds} seconds")
-        print("going left speed", speed_left, "right speed", speed_right, "for", seconds)
+        print("BEFORE: going left speed", speed_left, "right speed", speed_right, "for", seconds)
+        self.logEncodings()
         self.on_for_seconds(speed_left, speed_right, seconds)
+        print("AFTER: going left speed", speed_left, "right speed", speed_right, "for", seconds)
+        self.logEncodings()
         # sleep(seconds)  # Simulate motor movement
 
     def moveDeadReckoning(self, commands):
@@ -87,6 +98,11 @@ class Robot(MoveTank):
             prev_y = distance_y
             prev_orientation = orientation
 
+    def recalibrate(self):
+        self.gyro.reset()
+        self.gyro.calibrate()
+        sleep(1)
+
 if __name__ == "__main__":
     robo = Robot(OUTPUT_B, OUTPUT_A)
     # dead reckoning commands
@@ -96,3 +112,6 @@ if __name__ == "__main__":
         [-50, 80, 2],
     ]
     robo.moveDeadReckoning(commands)
+    # robo.logEncodings()
+    # robo.on_for_seconds(-50, 80, 2)
+    # robo.logEncodings()
