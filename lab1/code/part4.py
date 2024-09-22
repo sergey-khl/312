@@ -4,25 +4,23 @@ from time import sleep
 from math import cos, sin, pi
 
 from ev3dev2.sensor.lego import GyroSensor
-from ev3dev2.motor import OUTPUT_A, OUTPUT_B, SpeedRPM, SpeedPercent, MoveTank
+from ev3dev2.motor import OUTPUT_A, OUTPUT_B, MoveTank
 
 class Robot(MoveTank):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.max_rot_sec = 2.13
-        self.d = 97.5
+        self.d = 99
         self.integration_steps = 10
-        self.radius = 33
+        self.radius = 35
         self.gyro = GyroSensor()
         self.previous_degrees = 0
         self.recalibrate()
 
     def logEncodings(self):
-        # print("angle and rate", self.gyro.angle_and_rate)
         print("angle", self.gyro.angle)
-        # print("previous deg", self.previous_degrees)
-        print("left motor distance traveled", str(self.left_motor.rotations * 216))
-        print("right motor distance traveled", str(self.right_motor.rotations * 216))
+        print("left motor distance traveled", str(self.left_motor.rotations * 2 * self.radius * pi))
+        print("right motor distance traveled", str(self.right_motor.rotations * 2 * self.radius * pi))
 
     def findDistance(self, velocity, angular_velocity, seconds, prev_x, prev_y, prev_orientation):
         x = prev_x
@@ -61,7 +59,6 @@ class Robot(MoveTank):
             rotation_radius = self.d * (v_right + v_left) / (v_right - v_left)
 
             velocity = rotation_radius * angular_velocity
-            # print(f"velocity: {velocity}, rotation radius: {rotation_radius}")
         # straight line
         else:
             velocity = v_left
@@ -85,7 +82,6 @@ class Robot(MoveTank):
         self.on_for_seconds(speed_left, speed_right, seconds)
         print("AFTER: going left speed", speed_left, "right speed", speed_right, "for", seconds)
         self.logEncodings()
-        # sleep(seconds)  # Simulate motor movement
 
     def moveDeadReckoning(self, commands):
         prev_x = 0
@@ -112,6 +108,3 @@ if __name__ == "__main__":
         [-50, 80, 2],
     ]
     robo.moveDeadReckoning(commands)
-    # robo.logEncodings()
-    # robo.on_for_seconds(-50, 80, 2)
-    # robo.logEncodings()
