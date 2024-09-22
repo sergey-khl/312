@@ -13,7 +13,7 @@ Problem Number: 3
 Brief Program/Problem Description: 
 
 	We need to move 3 times in a rectangle or lemniscate (figure 8).
-    To do so call the program with ./lab1_part3 [lemniscate/rectangle]
+    To do so call the program with ./lab1_problem3 [lemniscate/rectangle]
 
 Brief Solution Summary:
 

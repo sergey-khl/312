@@ -1,4 +1,36 @@
 #!/usr/bin/env python3
+"""
+Group Members: Sergey Khlynovskiy, Jerrica Yang
+
+Date: 2024/09/22
+ 
+Brick Number: G2
+
+Lab Number: 1
+
+Problem Number: 4
+ 
+Brief Program/Problem Description: 
+
+    Need to perform dead reckoning. After running ./lab1_problem4.py add the commands
+    in groups of 3 for the input, and add "done" when finished adding commands.
+    If no commands are sent then the default commands from the lab are used.
+
+Brief Solution Summary:
+
+	used MoveTank and used the provided notes to perform the dead reckoning
+    We measured the max wheel rotation speed using the encoders and a ruler and hard coded the value here
+    We also hard coded the integration steps at 10. More info can be found in the report.
+
+Used Resources/Collaborators:
+	https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html
+    https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html
+    http://ugweb.cs.ualberta.ca/~vis/courses/robotics/assign/a1MobRob/lab1_notes.jpg
+
+I/we hereby certify that I/we have produced the following solution 
+using only the resources listed above in accordance with the 
+CMPUT 312 collaboration policy.
+"""
 
 from time import sleep
 from math import cos, sin, pi
@@ -84,6 +116,13 @@ class Robot(MoveTank):
         self.logEncodings()
 
     def moveDeadReckoning(self, commands):
+        if commands == []:
+            # default commands
+            commands = [
+                [80, 60, 2],
+                [60, 60, 1],
+                [-50, 80, 2],
+            ]
         prev_x = 0
         prev_y = 0
         prev_orientation = 0
@@ -102,9 +141,19 @@ class Robot(MoveTank):
 if __name__ == "__main__":
     robo = Robot(OUTPUT_B, OUTPUT_A)
     # dead reckoning commands
-    commands = [
-        [80, 60, 2],
-        [60, 60, 1],
-        [-50, 80, 2],
-    ]
+    commands = []
+    while True:
+        user_input = input("Enter 3 space-separated numbers (or type 'done' to exit): ")
+        
+        if user_input.lower() == "done":
+            print("running commands")
+            break
+
+        numbers = user_input.split()
+
+        if len(numbers) != 3:
+            print("Error: Please enter exactly 3 numbers.")
+            continue
+
+        commands.append([numbers])
     robo.moveDeadReckoning(commands)
