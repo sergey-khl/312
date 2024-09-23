@@ -104,6 +104,7 @@ class Robo(MoveDifferential):
         lemniscate_loop = [
             [self.goArcTurnRight, [200, 350]],
             [self.logEncodings, ["after top half"]],
+            [sleep, [5]],
             [self.goArcTurnLeft, [200, 10]],
             [self.logEncodings, ["after bottom half"]],
         ]

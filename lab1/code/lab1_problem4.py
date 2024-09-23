@@ -26,6 +26,7 @@ Used Resources/Collaborators:
 	https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html
     https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html
     http://ugweb.cs.ualberta.ca/~vis/courses/robotics/assign/a1MobRob/lab1_notes.jpg
+    https://automaticaddison.com/calculating-wheel-odometry-for-a-differential-drive-robot/ 
 
 I/we hereby certify that I/we have produced the following solution 
 using only the resources listed above in accordance with the 
@@ -41,7 +42,7 @@ from ev3dev2.motor import OUTPUT_A, OUTPUT_B, MoveTank
 class Robot(MoveTank):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.max_rot_sec = 2.13
+        self.max_rot_sec = 2.18
         self.d = 99
         self.integration_steps = 10
         self.radius = 35
@@ -57,28 +58,16 @@ class Robot(MoveTank):
     def findDistance(self, velocity, angular_velocity, seconds, prev_x, prev_y, prev_orientation):
         x = prev_x
         y = prev_y
-        orientation_1 = 0
-        orientation_2 = 0
-        t_1 = 0
-        t_2 = 0
-        delta_angular_velocity = angular_velocity / self.integration_steps
         delta_sec = seconds / self.integration_steps
+        delta_angular_velocity = angular_velocity * delta_sec
+        orientation = prev_orientation
         
         for i in range(self.integration_steps):
-            if(angular_velocity):
-                orientation_1 = prev_orientation + delta_angular_velocity * i
-                orientation_2 = prev_orientation + delta_angular_velocity * (i+1)
-            else:
-                orientation_1 = prev_orientation
-                orientation_2 = prev_orientation
-            t_1 = delta_sec * i
-            t_2 = delta_sec * (i+1)
-            x += t_2 * velocity * cos(orientation_2) - t_1 * velocity * cos(orientation_1)
-            y += t_2 * velocity * sin(orientation_2) - t_1 * velocity * sin(orientation_1)
-            
-            # print(f"x: {x}, y: {y}, orientation: {orientation_2}")
+            orientation += delta_angular_velocity
+            x += delta_sec * velocity * cos(orientation)
+            y += delta_sec * velocity * sin(orientation)
 
-        return x, y, orientation_2
+        return x, y, orientation
 
     def logPosition(self, speed_left, speed_right, seconds, prev_x, prev_y, prev_orientation):
         # find velocities of each wheel
@@ -143,7 +132,7 @@ if __name__ == "__main__":
     # dead reckoning commands
     commands = []
     while True:
-        user_input = input("Enter 3 space-separated numbers (or type 'done' to exit): ")
+        user_input = input("Enter 3 space-separated numbers (or type 'done' to execute code): ")
         
         if user_input.lower() == "done":
             print("running commands")
@@ -155,5 +144,11 @@ if __name__ == "__main__":
             print("Error: Please enter exactly 3 numbers.")
             continue
 
-        commands.append([numbers])
+        try:
+            num1, num2, num3 = map(int, numbers)
+            commands.append([num1, num2, num3])
+        except ValueError:
+            print("Error: Please enter valid numbers.")
+            continue
+
     robo.moveDeadReckoning(commands)
