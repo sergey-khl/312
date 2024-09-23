@@ -1,57 +1,132 @@
+## Run 1
+BEFORE: going left speed 80 right speed 60 for 2
+angle 0
+left motor distance traveled 0.0
+right motor distance traveled 0.6108652381980153
+AFTER: going left speed 80 right speed 60 for 2
+angle 57
+left motor distance traveled 995.710338262765
+right motor distance traveled 767.8576044149053
+ESTIMATED: v_left 383.52563115024196 v_right 287.6442233626815 velocity 335.58492725646164 rotation_radius -693.0 angular_velocity -0.48424953428060846 distance x 556.0643550689762 distance y -327.80844274681 orientation -0.968499068561217
+
+Measured x: 690mm
+Measured y: -300mm
+Measured angle: 61 degrees
+
+BEFORE: going left speed 60 right speed 60 for 1
+angle 60
+left motor distance traveled 972.4974592112405
+right motor distance traveled 756.251164889143
+AFTER: going left speed 60 right speed 60 for 1
+angle 61
+left motor distance traveled 1348.790445941218
+right motor distance traveled 1125.2137687607442
+ESTIMATED: v_left 287.6442233626815 v_right 287.6442233626815 velocity 287.6442233626815 rotation_radius None angular_velocity 0 distance x 719.0254478065677 distance y -564.8377267766325 orientation -0.968499068561217
+
+Measured x: 870mm
+Measured y: -575mm
+Measured angle: 61 degrees
+
+BEFORE: going left speed -50 right speed 80 for 2
+angle 61
+left motor distance traveled 1351.23390689401
+right motor distance traveled 1129.4898254281304
+AFTER: going left speed -50 right speed 80 for 2
+angle -190
+left motor distance traveled 699.4406977367275
+right motor distance traveled 2072.665753205866
+ESTIMATED: v_left -239.70351946890122 v_right 383.52563115024196 velocity 71.91105584067037 rotation_radius 22.846153846153847 angular_velocity 3.1476219728239556 distance x 719.2488141441523 distance y -565.0067242751209 orientation 5.3267448770866945
+
+Measured x: 930mm
+Measured y: -510mm
+Measured angle: -200 degrees
+
+
+## Run 2
+
 BEFORE: going left speed 80 right speed 60 for 2
 angle 0
 left motor distance traveled 0.0
 right motor distance traveled 0.0
 AFTER: going left speed 80 right speed 60 for 2
-angle 76
-left motor distance traveled 941.3433320631417
-right motor distance traveled 771.5227958440934
-ESTIMATED: v_left 374.7291717201905 v_right 281.0468787901429 velocity 327.88802525516667 rotation_radius -693.0000000000002 angular_velocity -0.47314289358609896 distance x 583.7328305278236 distance y -298.8280625826604 orientation -0.47314289358609896
+angle 61
+left motor distance traveled 1021.9775435052796
+right motor distance traveled 784.3509658462517
+ESTIMATED: v_left 383.52563115024196 v_right 287.6442233626815 velocity 335.58492725646164 rotation_radius -693.0 angular_velocity -0.48424953428060846 distance x 556.0643550689762 distance y -327.80844274681 orientation -0.968499068561217
+
+Measured x: 670mm
+Measured y: -290mm
+Measured angle: 61 degrees
+
 BEFORE: going left speed 60 right speed 60 for 1
-angle 97
-left motor distance traveled 915.686992058825
-right motor distance traveled 761.7489520329251
+angle 62
+left motor distance traveled 996.932068739161
+right motor distance traveled 781.2966396552615
 AFTER: going left speed 60 right speed 60 for 1
-angle 34
-left motor distance traveled 1294.4234397415944
-right motor distance traveled 1121.548577331556
-ESTIMATED: v_left 281.0468787901429 v_right 281.0468787901429 velocity 281.0468787901429 rotation_radius None angular_velocity 0 distance x 833.9040436111763 distance y -426.8972322609436 orientation -0.47314289358609896
+angle 63
+left motor distance traveled 1413.5421611902075
+right motor distance traveled 1182.0242359131596
+ESTIMATED: v_left 287.6442233626815 v_right 287.6442233626815 velocity 287.6442233626815 rotation_radius None angular_velocity 0 distance x 719.0254478065677 distance y -564.8377267766325 orientation -0.968499068561217
+
+Measured x: 900mm
+Measured y: -620mm
+Measured angle: 62 degrees
+
 BEFORE: going left speed -50 right speed 80 for 2
-angle 26
-left motor distance traveled 1295.6451702179907
-right motor distance traveled 1107.498676853002
+angle 63
+left motor distance traveled 1398.270530235257
+right motor distance traveled 1171.0286616255953
 AFTER: going left speed -50 right speed 80 for 2
-angle 13
-left motor distance traveled 641.4085001079161
-right motor distance traveled 2101.987284639371
-ESTIMATED: v_left -234.20573232511904 v_right 374.7291717201905 velocity 70.26171969753572 rotation_radius 22.84615384615385 angular_velocity 3.075428808309644 distance x 713.325811834682 distance y -354.73264925047823 orientation 2.602285914723545
-robot@ev3dev:~/312/lab1/code$ ./lab1_problem4.py
-Enter 3 space-separated numbers (or type 'done' to execute commands): done
-running commands
+angle -222
+left motor distance traveled 740.3686686959945
+right motor distance traveled 2123.367567976301
+ESTIMATED: v_left -239.70351946890122 v_right 383.52563115024196 velocity 71.91105584067037 rotation_radius 22.846153846153847 angular_velocity 3.1476219728239556 distance x 719.2488141441523 distance y -565.0067242751209 orientation 5.3267448770866945
+
+Measured x: 930mm
+Measured y: -600mm
+Measured angle: -230 degrees
+
+
+## Run 3
+
 BEFORE: going left speed 80 right speed 60 for 2
 angle 0
 left motor distance traveled 0.0
-right motor distance traveled -0.6108652381980153
+right motor distance traveled 0.0
 AFTER: going left speed 80 right speed 60 for 2
-angle 39
-left motor distance traveled 950.5063106361118
-right motor distance traveled 779.4640439406675
-ESTIMATED: v_left 374.7291717201905 v_right 281.0468787901429 velocity 327.88802525516667 rotation_radius -693.0000000000002 angular_velocity -0.47314289358609896 distance x 583.7328305278236 distance y -298.8280625826604 orientation -0.47314289358609896
+angle 59
+left motor distance traveled 998.1537992155571
+right motor distance traveled 767.2467391767073
+ESTIMATED: v_left 383.52563115024196 v_right 287.6442233626815 velocity 335.58492725646164 rotation_radius -693.0 angular_velocity -0.48424953428060846 distance x 556.0643550689762 distance y -327.80844274681 orientation -0.968499068561217
+
+Measured x: 670mm
+Measured y: -295mm
+Measured angle: 61 degrees
+
 BEFORE: going left speed 60 right speed 60 for 1
-angle 40
-left motor distance traveled 934.6238144429634
-right motor distance traveled 778.8531787024696
+angle 61
+left motor distance traveled 973.1083244494384
+right motor distance traveled 759.305491080133
 AFTER: going left speed 60 right speed 60 for 1
-angle 39
-left motor distance traveled 1332.2970845098716
-right motor distance traveled 1170.4177963873974
-ESTIMATED: v_left 281.0468787901429 v_right 281.0468787901429 velocity 281.0468787901429 rotation_radius None angular_velocity 0 distance x 833.9040436111763 distance y -426.8972322609436 orientation -0.47314289358609896
+angle 64
+left motor distance traveled 1364.062076896168
+right motor distance traveled 1140.4853997156945
+ESTIMATED: v_left 287.6442233626815 v_right 287.6442233626815 velocity 287.6442233626815 rotation_radius None angular_velocity 0 distance x 719.0254478065677 distance y -564.8377267766325 orientation -0.968499068561217
+
+Measured x: 820mm
+Measured y: -600mm
+Measured angle: 59 degrees
+
 BEFORE: going left speed -50 right speed 80 for 2
-angle 39
-left motor distance traveled 1316.414588316723
-right motor distance traveled 1156.3678959088431
+angle 64
+left motor distance traveled 1348.790445941218
+right motor distance traveled 1124.6029035225463
 AFTER: going left speed -50 right speed 80 for 2
-angle -303
-left motor distance traveled 659.7344572538566
-right motor distance traveled 2035.402973675787
-ESTIMATED: v_left -234.20573232511904 v_right 374.7291717201905 velocity 70.26171969753572 rotation_radius 22.84615384615385 angular_velocity 3.075428808309644 distance x 713.325811834682 distance y -354.73264925047823 orientation 2.602285914723545
+angle -213
+left motor distance traveled 687.8342582109653
+right motor distance traveled 2087.3265189226186
+ESTIMATED: v_left -239.70351946890122 v_right 383.52563115024196 velocity 71.91105584067037 rotation_radius 22.846153846153847 angular_velocity 3.1476219728239556 distance x 719.2488141441523 distance y -565.0067242751209 orientation 5.3267448770866945
+
+Measured x: 900mm
+Measured y: -550mm
+Measured angle: -230 degrees
