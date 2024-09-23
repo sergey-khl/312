@@ -1,3 +1,31 @@
+# formatted logs
+
+Run 1: 
+
+| Round  | Estimated x | Estimated y | Estimated Orientation  (deg) | Measured  x | Measured  y | Measured  angle (deg) |
+| ----- | ----- | ----- | ----- | ----- | ----- | ----- |
+| (80, 60, 2\) | 556 | \-327 | \-55 | 690 | \-300 | \-61 |
+| (60, 60, 1\) | 719 | \-564 | \-55 | 870 | \-575 | \-61 |
+| (-50, 80, 2\) | 719 | \-565 | 305 | 930 | \-510 | 200 |
+
+Run 2: 
+
+| Round  | Estimated x | Estimated y | Estimated Orientation  (deg) | Measured  x | Measured  y | Measured  angle (deg) |
+| ----- | ----- | ----- | ----- | ----- | ----- | ----- |
+| (80, 60, 2\) | 556 | \-327 | \-55 | 670 | \-290 | \-61 |
+| (60, 60, 1\) | 719 | \-564 | \-55 | 900 | \-620 | \-62 |
+| (-50, 80, 2\) | 719 | \-565 | 305 | 930 | \-600 | 230 |
+
+Run 3: 
+
+| Round  | Estimated x | Estimated y | Estimated Orientation  (deg) | Measured  x | Measured  y | Measured  angle (deg) |
+| ----- | ----- | ----- | ----- | ----- | ----- | ----- |
+| (80, 60, 2\) | 556 | \-327 | \-55 | 670 | \-295 | \-61 |
+| (60, 60, 1\) | 719 | \-564 | \-55 | 820 | \-600 | \-59 |
+| (-50, 80, 2\) | 719 | \-565 | 305 | 900 | \-550 | 230 |
+
+# raw logs
+
 ## Run 1
 BEFORE: going left speed 80 right speed 60 for 2
 angle 0
