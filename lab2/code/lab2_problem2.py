@@ -28,7 +28,7 @@ CMPUT 312 collaboration policy.
 """
 
 import sys
-from math import pi, cos, sin
+from math import pi, cos, sin, sqrt, atan
 # from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
 class TempArm():
     pass
@@ -79,6 +79,9 @@ class Arm():
     def getRadFromDeg(self, deg):
         return deg*pi/180
 
+    def getDegFromRad(self, rad):
+        return rad*180/pi
+
     def getAngleOfArm(self, arm, radians=False):
         angle = arm.position - arm.midpoint
         return self.getRadFromDeg(angle) if radians else angle
@@ -109,11 +112,45 @@ class Arm():
         self.lower_arm.wait_while("running")
         self.upper_arm.wait_while("running")
         
-
     def moveWithTheta(self, lower_angle, upper_angle):
         print(self.getPosition())
         self.moveArmsAbsolute(self.lower_arm.midpoint + lower_angle, self.upper_arm.midpoint + upper_angle)
         print(self.getPosition())
+
+    def findDistanceBetweenPoints(self):
+        # TODO: change this to touch sensor entering points
+        self.moveArmsAbsolute(self.lower_arm.midpoint + 50, self.upper_arm.midpoint - 10)
+        init_x, init_y = self.getPosition()
+
+        self.moveArmsAbsolute(self.lower_arm.midpoint + 30, self.upper_arm.midpoint - 10)
+        end_x, end_y = self.getPosition()
+
+        distance = sqrt((end_x - init_x) ** 2 + (end_y - init_y) ** 2)
+        print("distance between points is:" , distance, "mm")
+
+    def findAngleBetweenPoints(self):
+        # TODO: change this to touch sensor entering points
+        self.moveArmsAbsolute(self.lower_arm.midpoint + 50, self.upper_arm.midpoint - 10)
+        intersect_x, intersect_y = self.getPosition()
+        print("intersect", intersect_x, intersect_y)
+
+        self.moveArmsAbsolute(self.lower_arm.midpoint + 30, self.upper_arm.midpoint - 10)
+        first_x, first_y = self.getPosition()
+        print("first", first_x, first_y)
+
+        self.moveArmsAbsolute(self.lower_arm.midpoint + 60, self.upper_arm.midpoint - 10)
+        second_x, second_y = self.getPosition()
+        print("second", second_x, second_y)
+
+        try:
+            first_slope = (first_y - intersect_y)/(first_x - intersect_x)
+            print("first", first_slope)
+            second_slope = (second_y - intersect_y)/(second_x - intersect_x)
+            print("second", second_slope)
+            angle = atan(abs(first_slope - second_slope)/(1+first_slope*second_slope))
+        except:
+            print("division by zero. try some other points")
+        print("angle between lines is:" , angle, "radians or ", self.getDegFromRad(angle), "degrees")
 
 
 if __name__ == "__main__":
@@ -130,3 +167,7 @@ if __name__ == "__main__":
 
     if input_arg == "b":
         arm.moveWithTheta(-10, 35)
+    elif input_arg == "c_dist":
+        arm.findDistanceBetweenPoints()
+    elif input_arg == "c_angle":
+        arm.findAngleBetweenPoints()
