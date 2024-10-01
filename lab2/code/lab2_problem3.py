@@ -12,7 +12,7 @@ Problem Number: 2
  
 Brief Program/Problem Description: 
 
-	Forward kinematics to find position from joint angles
+	inverse kinematics to move end effector to position
 
 Brief Solution Summary:
 
@@ -70,6 +70,9 @@ class Arm():
         self.lower_arm.length = 100
         self.upper_arm.length = 100
 
+        # inverse config
+        self.newton_error = 0.01
+
         # move to initial position
         self.moveArmsAbsolute(self.lower_arm.midpoint, self.upper_arm.midpoint)
     
@@ -111,66 +114,44 @@ class Arm():
         self.upper_arm.run_to_abs_pos()
         self.lower_arm.wait_while("running")
         self.upper_arm.wait_while("running")
-        
-    def moveWithTheta(self, lower_angle, upper_angle):
-        print(self.getPosition())
-        self.moveArmsAbsolute(self.lower_arm.midpoint + lower_angle, self.upper_arm.midpoint + upper_angle)
-        print(self.getPosition())
-    
+
+    def createIntermediatePoints(self, init_x, init_y, end_x, end_y, num_points):
+        delta_x = (end_x - init_x)/(num_points - 1)
+        delta_y = (end_y - init_y)/(num_points - 1)
+
+        points = [None] * num_points
+        for i in range(num_points):
+            points[i] = [init_x+delta_x*i, init_y+delta_y*i]
+            
+        return points
+
     def euclideanDistance(self, init_x, init_y, end_x, end_y):
         return sqrt((end_x - init_x) ** 2 + (end_y - init_y) ** 2)
-
-    def findDistanceBetweenPoints(self):
-        # TODO: change this to touch sensor entering points
-        self.moveArmsAbsolute(self.lower_arm.midpoint + 50, self.upper_arm.midpoint - 10)
+    
+    def moveToPos(self, end_x, end_y):
         init_x, init_y = self.getPosition()
 
-        self.moveArmsAbsolute(self.lower_arm.midpoint + 30, self.upper_arm.midpoint - 10)
-        end_x, end_y = self.getPosition()
+        points = self.createIntermediatePoints(init_x, init_y, end_x, end_y, int(self.euclideanDistance(init_x, init_y, end_x, end_y) // 10))
 
-        distance = self.euclideanDistance(init_x, init_y, end_x, end_y)
-        print("distance between points is:" , distance, "mm")
-
-    def findAngleBetweenPoints(self):
-        # TODO: change this to touch sensor entering points
-        self.moveArmsAbsolute(self.lower_arm.midpoint + 50, self.upper_arm.midpoint - 10)
-        intersect_x, intersect_y = self.getPosition()
-        print("intersect", intersect_x, intersect_y)
-
-        self.moveArmsAbsolute(self.lower_arm.midpoint + 30, self.upper_arm.midpoint - 10)
-        first_x, first_y = self.getPosition()
-        print("first", first_x, first_y)
-
-        self.moveArmsAbsolute(self.lower_arm.midpoint + 60, self.upper_arm.midpoint - 10)
-        second_x, second_y = self.getPosition()
-        print("second", second_x, second_y)
-
-        try:
-            first_slope = (first_y - intersect_y)/(first_x - intersect_x)
-            print("first", first_slope)
-            second_slope = (second_y - intersect_y)/(second_x - intersect_x)
-            print("second", second_slope)
-            angle = atan(abs(first_slope - second_slope)/(1+first_slope*second_slope))
-        except:
-            print("division by zero. try some other points")
-        print("angle between lines is:" , angle, "radians or ", self.getDegFromRad(angle), "degrees")
-
+    def moveToMid(self):
+        pass
+        
 
 if __name__ == "__main__":
     arm = Arm()
     if len(sys.argv) != 2:
-        print("Error: Exactly one argument (b/c_dist/c_angle) is required.")
+        print("Error: Exactly one argument (pos/mid) is required.")
         sys.exit(1)
     
     input_arg = sys.argv[1]
 
-    if input_arg not in ["b", "c_dist", "c_angle"]:
-        print("Error: Argument must be 'b' or 'c_dist' or 'c_angle'.")
+    if input_arg not in ["pos", "mid"]:
+        print("Error: Argument must be 'pos' or 'mid'.")
         sys.exit(1)
 
-    if input_arg == "b":
-        arm.moveWithTheta(-10, 35)
-    elif input_arg == "c_dist":
-        arm.findDistanceBetweenPoints()
-    elif input_arg == "c_angle":
-        arm.findAngleBetweenPoints()
+    if input_arg == "pos":
+        poses = input("enter space separated desired x and y: ")
+        x, y = map(int, poses.split())
+        arm.moveToPos(x, y)
+    else:
+        arm.moveToMid()
