@@ -29,49 +29,40 @@ CMPUT 312 collaboration policy.
 
 import sys
 from math import pi, cos, sin, sqrt, atan
-# from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
-class TempArm():
-    pass
+from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
+from ev3dev2.sensor.lego import TouchSensor
 
-class TempMotor():
-    lower_arm = TempArm()
-    upper_arm = TempArm()
-
-    def stop(self):
-        pass
-
-    def run_to_abs_pos(self):
-        self.position = self.position_sp
-
-    def wait_while(self, m):
-        pass
+class ArmPart(LargeMotor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 class Arm():
-    def __init__(self, speed = 15, stop_action = "coast"):
-        # self.lower_arm = LargeMotor(OUTPUT_A)
-        # self.upper_arm = LargeMotor(OUTPUT_B)
-        self.lower_arm = TempMotor()
-        self.upper_arm = TempMotor()
+    def __init__(self, speed = 60, stop_action = "coast"):
+        self.lower_arm = ArmPart(OUTPUT_A)
+        self.upper_arm = ArmPart(OUTPUT_B)
+        # self.lower_arm = TempMotor()
+        # self.upper_arm = TempMotor()
         self.lower_arm.speed_sp = speed
         self.lower_arm.stop_action = stop_action
         self.upper_arm.speed_sp = speed
         self.upper_arm.stop_action =stop_action
 
         # calibrated config
-        self.lower_arm.lower_bound = 41316
-        self.lower_arm.upper_bound = 41534
-        self.lower_arm.midpoint = 41425
+        self.lower_arm.lower_bound = -182
+        self.lower_arm.upper_bound = 83
+        self.lower_arm.midpoint = -50
 
-        self.upper_arm.lower_bound = 41316
-        self.upper_arm.upper_bound = 41534
-        self.upper_arm.midpoint = 41425
+        self.upper_arm.lower_bound = -145
+        self.upper_arm.upper_bound = 130
+        self.upper_arm.midpoint = -8
 
         # arm lengths in mm
-        self.lower_arm.length = 100
-        self.upper_arm.length = 100
+        self.lower_arm.length = 160
+        self.upper_arm.length = 110
+        self.touchSensor = TouchSensor()
 
         # move to initial position
-        self.moveArmsAbsolute(self.lower_arm.midpoint, self.upper_arm.midpoint)
+        # self.moveArmsAbsolute(self.lower_arm.midpoint, self.upper_arm.midpoint)
     
     def __del__(self):
         self.stop()
@@ -120,30 +111,47 @@ class Arm():
     def euclideanDistance(self, init_x, init_y, end_x, end_y):
         return sqrt((end_x - init_x) ** 2 + (end_y - init_y) ** 2)
 
+    def recordLength(self):
+        while self.touchSensor.is_pressed:
+
+            x, y = self.getPosition()
+        
+        return x, y
+
     def findDistanceBetweenPoints(self):
         # TODO: change this to touch sensor entering points
-        self.moveArmsAbsolute(self.lower_arm.midpoint + 50, self.upper_arm.midpoint - 10)
-        init_x, init_y = self.getPosition()
+        first_x, first_y = self.recordLength()
 
-        self.moveArmsAbsolute(self.lower_arm.midpoint + 30, self.upper_arm.midpoint - 10)
-        end_x, end_y = self.getPosition()
+        second_x, second_y = self.recordLength()
 
-        distance = self.euclideanDistance(init_x, init_y, end_x, end_y)
+        distance = self.euclideanDistance(first_x, first_y, second_x, second_y)
+        # self.moveArmsAbsolute(self.lower_arm.midpoint + 50, self.upper_arm.midpoint - 10)
+        # init_x, init_y = self.getPosition()
+
+        # self.moveArmsAbsolute(self.lower_arm.midpoint + 30, self.upper_arm.midpoint - 10)
+        # end_x, end_y = self.getPosition()
+
+        # distance = self.euclideanDistance(init_x, init_y, end_x, end_y)
         print("distance between points is:" , distance, "mm")
 
     def findAngleBetweenPoints(self):
-        # TODO: change this to touch sensor entering points
-        self.moveArmsAbsolute(self.lower_arm.midpoint + 50, self.upper_arm.midpoint - 10)
-        intersect_x, intersect_y = self.getPosition()
-        print("intersect", intersect_x, intersect_y)
+        intersect_x, intersect_y = self.recordLength()
 
-        self.moveArmsAbsolute(self.lower_arm.midpoint + 30, self.upper_arm.midpoint - 10)
-        first_x, first_y = self.getPosition()
-        print("first", first_x, first_y)
+        first_x, first_y = self.recordLength()
 
-        self.moveArmsAbsolute(self.lower_arm.midpoint + 60, self.upper_arm.midpoint - 10)
-        second_x, second_y = self.getPosition()
-        print("second", second_x, second_y)
+        second_x,second_y = self.recordLength()
+        # # TODO: change this to touch sensor entering points
+        # self.moveArmsAbsolute(self.lower_arm.midpoint + 50, self.upper_arm.midpoint - 10)
+        # intersect_x, intersect_y = self.getPosition()
+        # print("intersect", intersect_x, intersect_y)
+
+        # self.moveArmsAbsolute(self.lower_arm.midpoint + 30, self.upper_arm.midpoint - 10)
+        # first_x, first_y = self.getPosition()
+        # print("first", first_x, first_y)
+
+        # self.moveArmsAbsolute(self.lower_arm.midpoint + 60, self.upper_arm.midpoint - 10)
+        # second_x, second_y = self.getPosition()
+        # print("second", second_x, second_y)
 
         try:
             first_slope = (first_y - intersect_y)/(first_x - intersect_x)

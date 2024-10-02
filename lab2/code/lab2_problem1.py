@@ -31,7 +31,7 @@ import sys
 from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
 
 class Arm():
-    def __init__(self, speed = 60, stop_action = "coast"):
+    def __init__(self, speed = 60, stop_action = "brake"):
         self.lower_arm = LargeMotor(OUTPUT_A)
         self.upper_arm = LargeMotor(OUTPUT_B)
         self.lower_arm.speed_sp = speed
@@ -40,13 +40,13 @@ class Arm():
         self.upper_arm.stop_action =stop_action
 
         # calibrated config
-        self.lower_arm_lower_bound = -182
-        self.lower_arm_upper_bound = 83
-        self.lower_arm_midpoint = -50
+        self.lower_arm_lower_bound = -159
+        self.lower_arm_upper_bound = 28
+        self.lower_arm_midpoint = -66
 
-        self.upper_arm_lower_bound = -145
-        self.upper_arm_upper_bound = 130
-        self.upper_arm_midpoint = -8
+        self.upper_arm_lower_bound = -122
+        self.upper_arm_upper_bound = 83
+        self.upper_arm_midpoint = -20
     
     def __del__(self):
         self.stop()
@@ -90,8 +90,11 @@ class Arm():
         if adj:
             lower_adj = int(input("how many deg do you want to adjust the lower bound(enter 0 to stop): "))
             while lower_adj != 0:
-                lower_bound = self.moveArmAbsolute(arm, lower_bound + lower_adj)
+                self.moveArmAbsolute(arm, self.getPosition(arm) + lower_adj)
                 lower_adj = int(input("how many deg do you want to adjust the lower bound(enter 0 to stop): "))
+            # total how much we moved for lower bound
+            lower_adj = self.getPosition(arm) - lower_bound
+            lower_bound += lower_adj
 
         midpoint = (lower_bound + upper_bound) // 2
 
@@ -100,8 +103,10 @@ class Arm():
         if adj:
             upper_adj = int(input("how many deg do you want to adjust the midpoint (enter 0 to stop): "))
             while upper_adj != 0:
-                upper_bound = self.moveArmAbsolute(arm, upper_bound + upper_adj)
+                self.moveArmAbsolute(arm, self.getPosition(arm) - upper_adj)
                 upper_adj = int(input("how many deg do you want to adjust the midpoint (enter 0 to stop): "))
+            # find new upper bound
+            upper_bound -= (midpoint - self.getPosition(arm) + lower_adj)
 
         return lower_bound, upper_bound, (lower_bound + upper_bound) // 2
 
