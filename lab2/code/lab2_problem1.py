@@ -35,13 +35,11 @@ class ArmPart(LargeMotor):
         super().__init__(*args, **kwargs)
 
 class Arm():
-    def __init__(self, speed = 60, stop_action = "brake"):
+    def __init__(self, speed = 60, stop_action = "hold"):
         self.lower_arm = ArmPart(OUTPUT_A)
         self.upper_arm = ArmPart(OUTPUT_B)
-        self.lower_arm.speed_sp = speed
-        self.lower_arm.stop_action = stop_action
-        self.upper_arm.speed_sp = speed
-        self.upper_arm.stop_action =stop_action
+        self.setStopAction(stop_action)
+        self.setSpeed(speed)
 
         # calibrated config
         self.lower_arm.lower_bound = -157
@@ -53,6 +51,14 @@ class Arm():
     
     def __del__(self):
         self.stop()
+
+    def setStopAction(self, stop_action):
+        self.lower_arm.stop_action = stop_action
+        self.upper_arm.stop_action = stop_action
+
+    def setSpeed(self, speed):
+        self.lower_arm.speed_sp = speed
+        self.upper_arm.speed_sp = speed
     
     def logPositions(self):
         print("lower angle", self.getAngle(self.lower_arm))

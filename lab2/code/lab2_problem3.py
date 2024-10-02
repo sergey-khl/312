@@ -28,11 +28,16 @@ CMPUT 312 collaboration policy.
 """
 
 import sys
+from time import sleep
 from math import pi, cos, sin, sqrt, atan
 # from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
+
 class TempArm():
     pass
 
+# class ArmPart(LargeMotor):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
 class TempMotor():
     lower_arm = TempArm()
     upper_arm = TempArm()
@@ -47,15 +52,13 @@ class TempMotor():
         pass
 
 class Arm():
-    def __init__(self, speed = 15, stop_action = "coast"):
-        # self.lower_arm = LargeMotor(OUTPUT_A)
-        # self.upper_arm = LargeMotor(OUTPUT_B)
+    def __init__(self, speed = 60, stop_action = "hold"):
+        # self.lower_arm = ArmPart(OUTPUT_A)
+        # self.upper_arm = ArmPart(OUTPUT_B)
         self.lower_arm = TempMotor()
         self.upper_arm = TempMotor()
-        self.lower_arm.speed_sp = speed
-        self.lower_arm.stop_action = stop_action
-        self.upper_arm.speed_sp = speed
-        self.upper_arm.stop_action =stop_action
+        self.setStopAction(stop_action)
+        self.setSpeed(speed)
 
         # calibrated config
         self.lower_arm.lower_bound = 41316
@@ -67,8 +70,8 @@ class Arm():
         self.upper_arm.midpoint = 41425
 
         # arm lengths in mm
-        self.lower_arm.length = 100
-        self.upper_arm.length = 100
+        self.lower_arm.length = 160
+        self.upper_arm.length = 110
 
         # inverse config
         self.newton_error = 0.01
@@ -78,6 +81,14 @@ class Arm():
     
     def __del__(self):
         self.stop()
+
+    def setStopAction(self, stop_action):
+        self.lower_arm.stop_action = stop_action
+        self.upper_arm.stop_action = stop_action
+
+    def setSpeed(self, speed):
+        self.lower_arm.speed_sp = speed
+        self.upper_arm.speed_sp = speed
 
     def getRadFromDeg(self, deg):
         return deg*pi/180
@@ -103,6 +114,18 @@ class Arm():
     def getUpperArm(self):
         return self.upper_arm
 
+    def recordLength(self):
+        self.setStopAction("coast")
+        self.stop()
+        while not self.touchSensor.is_pressed:
+            print("move the arm and press button")
+            sleep(1)
+            
+        x, y = self.getPosition()
+        print("got position:", x, y)
+        
+        return x, y
+
     def stop(self):
         self.lower_arm.stop()
         self.upper_arm.stop()
@@ -116,11 +139,11 @@ class Arm():
         self.upper_arm.wait_while("running")
 
     def createIntermediatePoints(self, init_x, init_y, end_x, end_y, num_points):
-        delta_x = (end_x - init_x)/(num_points - 1)
-        delta_y = (end_y - init_y)/(num_points - 1)
+        delta_x = (end_x - init_x)/(num_points)
+        delta_y = (end_y - init_y)/(num_points)
 
-        points = [None] * num_points
-        for i in range(num_points):
+        points = [None] * num_points + 1
+        for i in range(num_points + 1):
             points[i] = [init_x+delta_x*i, init_y+delta_y*i]
             
         return points
@@ -131,7 +154,7 @@ class Arm():
     def moveToPos(self, end_x, end_y):
         init_x, init_y = self.getPosition()
 
-        points = self.createIntermediatePoints(init_x, init_y, end_x, end_y, int(self.euclideanDistance(init_x, init_y, end_x, end_y) // 10))
+        points = self.createIntermediatePoints(init_x, init_y, end_x, end_y, max(1, int(self.euclideanDistance(init_x, init_y, end_x, end_y) // 10)))
 
     def moveToMid(self):
         pass

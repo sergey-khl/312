@@ -29,7 +29,7 @@ CMPUT 312 collaboration policy.
 
 import sys
 from math import pi, cos, sin, sqrt, atan
-import time
+from time import sleep
 from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
 from ev3dev2.sensor.lego import TouchSensor
 
@@ -38,15 +38,13 @@ class ArmPart(LargeMotor):
         super().__init__(*args, **kwargs)
 
 class Arm():
-    def __init__(self, speed = 60, stop_action = "coast"):
+    def __init__(self, speed = 60, stop_action = "hold"):
         self.lower_arm = ArmPart(OUTPUT_A)
         self.upper_arm = ArmPart(OUTPUT_B)
         # self.lower_arm = TempMotor()
         # self.upper_arm = TempMotor()
-        self.lower_arm.speed_sp = speed
-        self.lower_arm.stop_action = stop_action
-        self.upper_arm.speed_sp = speed
-        self.upper_arm.stop_action =stop_action
+        self.setStopAction(stop_action)
+        self.setSpeed(speed)
 
         # calibrated config
         self.lower_arm.lower_bound = -157
@@ -66,6 +64,14 @@ class Arm():
     
     def __del__(self):
         self.stop()
+    
+    def setStopAction(self, stop_action):
+        self.lower_arm.stop_action = stop_action
+        self.upper_arm.stop_action = stop_action
+
+    def setSpeed(self, speed):
+        self.lower_arm.speed_sp = speed
+        self.upper_arm.speed_sp = speed
 
     def getRadFromDeg(self, deg):
         return deg*pi/180
@@ -112,9 +118,11 @@ class Arm():
         return sqrt((end_x - init_x) ** 2 + (end_y - init_y) ** 2)
 
     def recordLength(self):
+        self.setStopAction("coast")
+        self.stop()
         while not self.touchSensor.is_pressed:
             print("move the arm and press button")
-            time.sleep(1)
+            sleep(1)
             
         x, y = self.getPosition()
         print("got position:", x, y)
@@ -125,7 +133,7 @@ class Arm():
         # TODO: change this to touch sensor entering points
         first_x, first_y = self.recordLength()
 
-        time.sleep(2)
+        sleep(2)
 
         second_x, second_y = self.recordLength()
 
