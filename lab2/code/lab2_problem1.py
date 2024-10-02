@@ -27,10 +27,11 @@ using only the resources listed above in accordance with the
 CMPUT 312 collaboration policy.
 """
 
+import sys
 from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
 
 class Arm():
-    def __init__(self, speed = 15, stop_action = "brake"):
+    def __init__(self, speed = 60, stop_action = "coast"):
         self.lower_arm = LargeMotor(OUTPUT_A)
         self.upper_arm = LargeMotor(OUTPUT_B)
         self.lower_arm.speed_sp = speed
@@ -39,13 +40,16 @@ class Arm():
         self.upper_arm.stop_action =stop_action
 
         # calibrated config
-        self.lower_arm_lower_bound = 41316
-        self.lower_arm_upper_bound = 41534
-        self.lower_arm_midpoint = 41425
+        self.lower_arm_lower_bound = -182
+        self.lower_arm_upper_bound = 83
+        self.lower_arm_midpoint = -50
 
-        self.upper_arm_lower_bound = 41316
-        self.upper_arm_upper_bound = 41534
-        self.upper_arm_midpoint = 41425
+        self.upper_arm_lower_bound = -145
+        self.upper_arm_upper_bound = 130
+        self.upper_arm_midpoint = -8
+    
+    def __del__(self):
+        self.stop()
     
     def logPositions(self):
         print("lower angle", self.getAngle(self.lower_arm))
@@ -68,64 +72,54 @@ class Arm():
         self.upper_arm.stop()
 
     # this is blocking due to the wait while
-    def moveArmRelative(self, arm, pos):
-        arm.position_sp = pos
-        # move to the middle
-        arm.run_to_rel_pos()
-        arm.wait_while("running")
-        return self.getPosition(arm)
-
-    # this is blocking due to the wait while
     def moveArmAbsolute(self, arm, pos):
         arm.position_sp = pos
         # move to the middle
         arm.run_to_abs_pos()
-        arm.wait_while("running")
+        arm.wait_while("running", 360000/arm.speed_sp)
         return self.getPosition(arm)
 
     # not necessarily true midpoint just in current context
     # will move the motor to the middle
-    def findBounds(self, arm, length):
+    def findBounds(self, arm, adj=True):
         # find upper bound
-        upper_bound = self.moveArmRelative(arm, 90)
+        upper_bound = self.moveArmAbsolute(arm, arm.position + 360)
 
         # find lower bound
-        lower_bound = self.moveArmRelative(arm, -90)
+        lower_bound = self.moveArmAbsolute(arm, arm.position - 360)
+        if adj:
+            lower_adj = int(input("how many deg do you want to adjust the lower bound(enter 0 to stop): "))
+            while lower_adj != 0:
+                lower_bound = self.moveArmAbsolute(arm, lower_bound + lower_adj)
+                lower_adj = int(input("how many deg do you want to adjust the lower bound(enter 0 to stop): "))
 
         midpoint = (lower_bound + upper_bound) // 2
 
         # move to the middle
         self.moveArmAbsolute(arm, midpoint)
+        if adj:
+            upper_adj = int(input("how many deg do you want to adjust the midpoint (enter 0 to stop): "))
+            while upper_adj != 0:
+                upper_bound = self.moveArmAbsolute(arm, upper_bound + upper_adj)
+                upper_adj = int(input("how many deg do you want to adjust the midpoint (enter 0 to stop): "))
 
-        return lower_bound, upper_bound, midpoint
+        return lower_bound, upper_bound, (lower_bound + upper_bound) // 2
 
     def calibrate(self):
-        self.findBounds(self.upper_arm)
+        self.findBounds(self.upper_arm, False)
 
         lower_bound_lower_arm, upper_bound_lower_arm, midpoint_lower_arm = self.findBounds(self.lower_arm)
-
-        lower_bound_lower_arm += 15
-        upper_bound_lower_arm -= 68
-        midpoint_lower_arm = (lower_bound_lower_arm + upper_bound_lower_arm) // 2
 
         lower_bound_upper_arm, upper_bound_upper_arm, midpoint_upper_arm = self.findBounds(self.upper_arm)
 
         self.stop()
-        self.lower_arm_lower_bound = lower_bound_lower_arm
-        self.lower_arm_upper_bound = upper_bound_lower_arm
-        self.lower_arm_midpoint = midpoint_lower_arm
+        print("lower arm lower bound", lower_bound_lower_arm)
+        print("lower arm upper bound", upper_bound_lower_arm)
+        print("lower arm midpoint", midpoint_lower_arm)
 
-        self.upper_arm_lower_bound = lower_bound_upper_arm
-        self.upper_arm_upper_bound = upper_bound_upper_arm
-        self.upper_arm_midpoint = midpoint_upper_arm
-
-        print("lower arm lower bound", self.lower_arm_lower_bound)
-        print("lower arm upper bound", self.lower_arm_upper_bound)
-        print("lower arm midpoint", self.lower_arm_midpoint)
-
-        print("upper arm lower bound", self.upper_arm_lower_bound)
-        print("upper arm upper bound", self.upper_arm_upper_bound)
-        print("upper arm midpoint", self.upper_arm_midpoint)
+        print("upper arm lower bound", lower_bound_upper_arm)
+        print("upper arm upper bound", upper_bound_upper_arm)
+        print("upper arm midpoint", midpoint_upper_arm)
 
     def workspace(self):
         # move to the middle first
@@ -136,13 +130,27 @@ class Arm():
         self.moveArmAbsolute(self.lower_arm, self.lower_arm_lower_bound)
         self.moveArmAbsolute(self.upper_arm, self.upper_arm_lower_bound)
 
-        self.moveArmAbsolute(self.upper_arm, self.upper_arm_midpoint)
-
         # go to upper bound
         self.moveArmAbsolute(self.lower_arm, self.lower_arm_upper_bound)
         self.moveArmAbsolute(self.upper_arm, self.upper_arm_upper_bound)
 
+        # go to middle again
+        self.moveArmAbsolute(self.upper_arm, self.upper_arm_midpoint)
+        self.moveArmAbsolute(self.lower_arm, self.lower_arm_midpoint)
+
 if __name__ == "__main__":
     arm = Arm()
-    arm.calibrate()
-    arm.workspace()
+    if len(sys.argv) != 2:
+        print("Error: Exactly one argument (cal/work) is required.")
+        sys.exit(1)
+    
+    input_arg = sys.argv[1]
+
+    if input_arg not in ["cal", "work"]:
+        print("Error: Argument must be 'cal' or 'work'.")
+        sys.exit(1)
+
+    if input_arg == "cal":
+        arm.calibrate()
+    else:
+        arm.workspace()
