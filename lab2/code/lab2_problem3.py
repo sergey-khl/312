@@ -99,6 +99,10 @@ class Arm():
     def getAngleOfArm(self, arm, radians=False):
         angle = arm.position - arm.midpoint
         return self.getRadFromDeg(angle) if radians else angle
+
+    # will convert given theta from radians to a pos in degrees
+    def getAbsPosFromTheta(self, arm, theta):
+        return arm.midpoint + self.getDegFromRad(theta)
     
     # of end effector
     def getPosition(self):
@@ -121,6 +125,8 @@ class Arm():
             print("move the arm and press button")
             sleep(1)
             
+        self.setStopAction("hold")
+        self.stop()
         x, y = self.getPosition()
         print("got position:", x, y)
         
@@ -142,39 +148,65 @@ class Arm():
         delta_x = (end_x - init_x)/(num_points)
         delta_y = (end_y - init_y)/(num_points)
 
-        points = [None] * num_points + 1
-        for i in range(num_points + 1):
-            points[i] = [init_x+delta_x*i, init_y+delta_y*i]
+        points = [None] * num_points
+        for i in range(1, num_points + 1):
+            points[i - 1] = [init_x+delta_x*i, init_y+delta_y*i]
             
         return points
 
     def euclideanDistance(self, init_x, init_y, end_x, end_y):
         return sqrt((end_x - init_x) ** 2 + (end_y - init_y) ** 2)
     
-    def moveToPos(self, end_x, end_y):
+    def analyticalSolve(self, points):
+        curr_theta_2 = self.getAngleOfArm(self.upper_arm, True)
+        for i, (x, y) in enumerate(points):
+            d = (x ** 2 + y ** 2 - self.lower_arm.length ** 2 - self.upper_arm.length ** 2)/(2*self.lower_arm.length*self.upper_arm.length)
+            theta_2 = atan(sqrt(1-d ** 2) / d)
+            if (abs(curr_theta_2 - theta_2) < abs(curr_theta_2 + theta_2)):
+                curr_theta_2 = theta_2
+            else:
+                curr_theta_2 = -theta_2
+            
+            points[i] = [atan(y/x) - atan((self.upper_arm.length*sin(curr_theta_2))/(self.lower_arm.length + self.upper_arm.length*cos(curr_theta_2))), curr_theta_2]
+        
+        return points
+    
+    def moveToPos(self, type_arg, end_x, end_y):
         init_x, init_y = self.getPosition()
+        print(self.getPosition())
 
         points = self.createIntermediatePoints(init_x, init_y, end_x, end_y, max(1, int(self.euclideanDistance(init_x, init_y, end_x, end_y) // 10)))
+        if type_arg == "anal":
+            angles = self.analyticalSolve(points)
 
-    def moveToMid(self):
+        for theta_1, theta_2 in angles:
+            self.moveArmsAbsolute(self.getAbsPosFromTheta(self.lower_arm, theta_1), self.getAbsPosFromTheta(self.upper_arm, theta_2))
+        print(self.getPosition())
+
+    def moveToMid(self, type_arg):
         pass
         
 
 if __name__ == "__main__":
     arm = Arm()
-    if len(sys.argv) != 2:
-        print("Error: Exactly one argument (pos/mid) is required.")
+    if len(sys.argv) != 3:
+        print("Error: Exactly two arguments (pos/mid) and (anal/num) are required.")
         sys.exit(1)
     
-    input_arg = sys.argv[1]
+    prog_arg = sys.argv[1]
+    type_arg = sys.argv[2]
 
-    if input_arg not in ["pos", "mid"]:
+    if prog_arg not in ["pos", "mid"]:
         print("Error: Argument must be 'pos' or 'mid'.")
         sys.exit(1)
 
-    if input_arg == "pos":
+    if type_arg not in ["anal", "num"]:
+        print("Error: Argument must be 'anal' or 'num'.")
+        sys.exit(1)
+
+    if prog_arg == "pos":
         poses = input("enter space separated desired x and y: ")
         x, y = map(int, poses.split())
-        arm.moveToPos(x, y)
+        arm.moveToPos(type_arg, x, y)
     else:
-        arm.moveToMid()
+        arm.moveToMid(type_arg)

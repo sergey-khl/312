@@ -124,6 +124,8 @@ class Arm():
             print("move the arm and press button")
             sleep(1)
             
+        self.setStopAction("hold")
+        self.stop()
         x, y = self.getPosition()
         print("got position:", x, y)
         
