@@ -30,23 +30,26 @@ CMPUT 312 collaboration policy.
 import sys
 from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
 
+class ArmPart(LargeMotor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
 class Arm():
     def __init__(self, speed = 60, stop_action = "brake"):
-        self.lower_arm = LargeMotor(OUTPUT_A)
-        self.upper_arm = LargeMotor(OUTPUT_B)
+        self.lower_arm = ArmPart(OUTPUT_A)
+        self.upper_arm = ArmPart(OUTPUT_B)
         self.lower_arm.speed_sp = speed
         self.lower_arm.stop_action = stop_action
         self.upper_arm.speed_sp = speed
         self.upper_arm.stop_action =stop_action
 
         # calibrated config
-        self.lower_arm_lower_bound = -159
-        self.lower_arm_upper_bound = 28
-        self.lower_arm_midpoint = -66
-
-        self.upper_arm_lower_bound = -122
-        self.upper_arm_upper_bound = 83
-        self.upper_arm_midpoint = -20
+        self.lower_arm.lower_bound = -157
+        self.lower_arm.upper_bound = 40
+        self.lower_arm.midpoint = -59
+        self.upper_arm.lower_bound = -123
+        self.upper_arm.upper_bound = 83
+        self.upper_arm.midpoint = -20
     
     def __del__(self):
         self.stop()
@@ -118,13 +121,13 @@ class Arm():
         lower_bound_upper_arm, upper_bound_upper_arm, midpoint_upper_arm = self.findBounds(self.upper_arm)
 
         self.stop()
-        print("lower arm lower bound", lower_bound_lower_arm)
-        print("lower arm upper bound", upper_bound_lower_arm)
-        print("lower arm midpoint", midpoint_lower_arm)
+        print("self.lower_arm.lower_bound =", lower_bound_lower_arm)
+        print("self.lower_arm.upper_bound =", upper_bound_lower_arm)
+        print("self.lower_arm.midpoint =", midpoint_lower_arm)
 
-        print("upper arm lower bound", lower_bound_upper_arm)
-        print("upper arm upper bound", upper_bound_upper_arm)
-        print("upper arm midpoint", midpoint_upper_arm)
+        print("self.upper_arm.lower_bound =", lower_bound_upper_arm)
+        print("self.upper_arm.upper_bound =", upper_bound_upper_arm)
+        print("self.upper_arm.midpoint =", midpoint_upper_arm)
 
     def workspace(self):
         # move to the middle first
