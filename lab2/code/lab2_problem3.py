@@ -29,7 +29,7 @@ CMPUT 312 collaboration policy.
 
 import sys
 from time import sleep
-from math import pi, cos, sin, sqrt, atan
+from math import pi, cos, sin, sqrt, atan, acos
 # from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
 
 class TempArm():
@@ -80,6 +80,7 @@ class Arm():
         self.moveArmsAbsolute(self.lower_arm.midpoint, self.upper_arm.midpoint)
     
     def __del__(self):
+        self.setStopAction("coast")
         self.stop()
 
     def setStopAction(self, stop_action):
@@ -161,7 +162,8 @@ class Arm():
         curr_theta_2 = self.getAngleOfArm(self.upper_arm, True)
         for i, (x, y) in enumerate(points):
             d = (x ** 2 + y ** 2 - self.lower_arm.length ** 2 - self.upper_arm.length ** 2)/(2*self.lower_arm.length*self.upper_arm.length)
-            theta_2 = atan(sqrt(1-d ** 2) / d)
+            # theta_2 = atan(sqrt(1-d ** 2) / d)
+            theta_2 = acos(d)
             if (abs(curr_theta_2 - theta_2) < abs(curr_theta_2 + theta_2)):
                 curr_theta_2 = theta_2
             else:

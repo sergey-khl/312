@@ -47,12 +47,12 @@ class Arm():
         self.setSpeed(speed)
 
         # calibrated config
-        self.lower_arm.lower_bound = -157
-        self.lower_arm.upper_bound = 40
-        self.lower_arm.midpoint = -59
-        self.upper_arm.lower_bound = -123
-        self.upper_arm.upper_bound = 83
-        self.upper_arm.midpoint = -20
+        self.lower_arm.lower_bound = -117
+        self.lower_arm.upper_bound = 89
+        self.lower_arm.midpoint = -5
+        self.upper_arm.lower_bound = -52
+        self.upper_arm.upper_bound = 201
+        self.upper_arm.midpoint = 54
 
         # arm lengths in mm
         self.lower_arm.length = 160
@@ -63,6 +63,7 @@ class Arm():
         self.moveArmsAbsolute(self.lower_arm.midpoint, self.upper_arm.midpoint)
     
     def __del__(self):
+        self.setStopAction("coast")
         self.stop()
     
     def setStopAction(self, stop_action):

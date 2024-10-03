@@ -42,14 +42,15 @@ class Arm():
         self.setSpeed(speed)
 
         # calibrated config
-        self.lower_arm.lower_bound = -157
-        self.lower_arm.upper_bound = 40
-        self.lower_arm.midpoint = -59
-        self.upper_arm.lower_bound = -123
-        self.upper_arm.upper_bound = 83
-        self.upper_arm.midpoint = -20
+        self.lower_arm.lower_bound = -127
+        self.lower_arm.upper_bound = 75
+        self.lower_arm.midpoint = -1
+        self.upper_arm.lower_bound = -43
+        self.upper_arm.upper_bound = 209
+        self.upper_arm.midpoint = 58
     
     def __del__(self):
+        self.setStopAction("coast")
         self.stop()
 
     def setStopAction(self, stop_action):
@@ -93,6 +94,13 @@ class Arm():
     def findBounds(self, arm, adj=True):
         # find upper bound
         upper_bound = self.moveArmAbsolute(arm, arm.position + 360)
+        if adj:
+            upper_adj = int(input("how many deg do you want to adjust the upper bound (enter 0 to stop): "))
+            while upper_adj != 0:
+                self.moveArmAbsolute(arm, self.getPosition(arm) - upper_adj)
+                upper_adj = int(input("how many deg do you want to adjust the upper bound (enter 0 to stop): "))
+            # find new upper bound
+            upper_bound = self.getPosition(arm)
 
         # find lower bound
         lower_bound = self.moveArmAbsolute(arm, arm.position - 360)
@@ -102,26 +110,23 @@ class Arm():
                 self.moveArmAbsolute(arm, self.getPosition(arm) + lower_adj)
                 lower_adj = int(input("how many deg do you want to adjust the lower bound(enter 0 to stop): "))
             # total how much we moved for lower bound
-            lower_adj = self.getPosition(arm) - lower_bound
-            lower_bound += lower_adj
+            lower_bound = self.getPosition(arm)
 
         midpoint = (lower_bound + upper_bound) // 2
 
         # move to the middle
         self.moveArmAbsolute(arm, midpoint)
         if adj:
-            upper_adj = int(input("how many deg do you want to adjust the midpoint (enter 0 to stop): "))
-            while upper_adj != 0:
-                self.moveArmAbsolute(arm, self.getPosition(arm) - upper_adj)
-                upper_adj = int(input("how many deg do you want to adjust the midpoint (enter 0 to stop): "))
-            # find new upper bound
-            upper_bound -= (midpoint - self.getPosition(arm) + lower_adj)
+            mid_adj = int(input("how many deg do you want to adjust the midpoint (enter 0 to stop): "))
+            while mid_adj != 0:
+                self.moveArmAbsolute(arm, self.getPosition(arm) - mid_adj)
+                mid_adj = int(input("how many deg do you want to adjust the midpoint (enter 0 to stop): "))
+            # find new midpoint
+            midpoint = self.getPosition(arm)
 
-        return lower_bound, upper_bound, (lower_bound + upper_bound) // 2
+        return lower_bound, upper_bound, midpoint
 
     def calibrate(self):
-        self.findBounds(self.upper_arm, False)
-
         lower_bound_lower_arm, upper_bound_lower_arm, midpoint_lower_arm = self.findBounds(self.lower_arm)
 
         lower_bound_upper_arm, upper_bound_upper_arm, midpoint_upper_arm = self.findBounds(self.upper_arm)
@@ -136,21 +141,24 @@ class Arm():
         print("self.upper_arm.midpoint =", midpoint_upper_arm)
 
     def workspace(self):
-        # move to the middle first
-        self.moveArmAbsolute(self.lower_arm, self.lower_arm_midpoint)
-        self.moveArmAbsolute(self.upper_arm, self.upper_arm_midpoint)
+        # go to middle
+        self.moveArmAbsolute(self.upper_arm, self.upper_arm.midpoint)
+        self.moveArmAbsolute(self.lower_arm, self.lower_arm.midpoint)
 
         # go to lower bound
-        self.moveArmAbsolute(self.lower_arm, self.lower_arm_lower_bound)
-        self.moveArmAbsolute(self.upper_arm, self.upper_arm_lower_bound)
+        self.moveArmAbsolute(self.lower_arm, self.lower_arm.lower_bound)
+        self.moveArmAbsolute(self.upper_arm, self.upper_arm.lower_bound)
 
         # go to upper bound
-        self.moveArmAbsolute(self.lower_arm, self.lower_arm_upper_bound)
-        self.moveArmAbsolute(self.upper_arm, self.upper_arm_upper_bound)
+        self.moveArmAbsolute(self.lower_arm, self.lower_arm.upper_bound)
+        self.moveArmAbsolute(self.upper_arm, self.upper_arm.upper_bound)
+
+        # go to lower bound
+        self.moveArmAbsolute(self.lower_arm, self.lower_arm.lower_bound)
 
         # go to middle again
-        self.moveArmAbsolute(self.upper_arm, self.upper_arm_midpoint)
-        self.moveArmAbsolute(self.lower_arm, self.lower_arm_midpoint)
+        self.moveArmAbsolute(self.upper_arm, self.upper_arm.midpoint)
+        self.moveArmAbsolute(self.lower_arm, self.lower_arm.midpoint)
 
 if __name__ == "__main__":
     arm = Arm()
