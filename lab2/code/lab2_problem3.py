@@ -2,25 +2,37 @@
 """
 Group Members: Sergey Khlynovskiy, Jerrica Yang
 
-Date: XXX
+Date: 2024-10-06
  
 Brick Number: G2
 
 Lab Number: 2
 
-Problem Number: 2
+Problem Number: 3
  
 Brief Program/Problem Description: 
 
-	inverse kinematics to move end effector to position
+	inverse kinematics to move end effector to position with newton and analytical method.
+    Also need to move to midpoint from recorded angles
 
 Brief Solution Summary:
 
-    XXX
+    Implemented analytical method with many intermediate points. Used a tangent instead of
+    cosine method as it was more consistent. Just had to choose where to use the +/- sqrt based
+    on the previous angle. The number of intermediate points is chosen to be a prime to avoid the case
+    when y=0 so that there are no division by 0 issues.
+
+    For newton we implemented the calculations with an inverse jacobian and bounded the angle to never
+    change the radians by more that 0.5 for each step.
+
+    For midpoint we used the same functions as in the previous part.
+
+    To run the program enter program_name [pos/mid] [anal/num]
 
 Used Resources/Collaborators:
 	https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html
     https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html
+    http://ugweb.cs.ualberta.ca/~vis/courses/robotics/assign/a2Arm/lab2Notes.pdf
 
 I/we hereby certify that I/we have produced the following solution 
 using only the resources listed above in accordance with the 
@@ -30,51 +42,37 @@ CMPUT 312 collaboration policy.
 import sys
 from time import sleep
 from math import pi, cos, sin, sqrt, atan, acos
-# from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
+from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
+from ev3dev2.sensor.lego import TouchSensor
 
-class TempArm():
-    pass
-
-# class ArmPart(LargeMotor):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-class TempMotor():
-    lower_arm = TempArm()
-    upper_arm = TempArm()
-
-    def stop(self):
-        pass
-
-    def run_to_abs_pos(self):
-        self.position = self.position_sp
-
-    def wait_while(self, m):
-        pass
+class ArmPart(LargeMotor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 class Arm():
     def __init__(self, speed = 60, stop_action = "hold"):
-        # self.lower_arm = ArmPart(OUTPUT_A)
-        # self.upper_arm = ArmPart(OUTPUT_B)
-        self.lower_arm = TempMotor()
-        self.upper_arm = TempMotor()
+        self.lower_arm = ArmPart(OUTPUT_A)
+        self.upper_arm = ArmPart(OUTPUT_B)
         self.setStopAction(stop_action)
         self.setSpeed(speed)
 
         # calibrated config
-        self.lower_arm.lower_bound = 41316
-        self.lower_arm.upper_bound = 41534
-        self.lower_arm.midpoint = 41425
-
-        self.upper_arm.lower_bound = 41316
-        self.upper_arm.upper_bound = 41534
-        self.upper_arm.midpoint = 41425
+        self.lower_arm.lower_bound = -127
+        self.lower_arm.upper_bound = 75
+        # assume we manually put in midpoint each time
+        self.lower_arm.midpoint = self.lower_arm.position
+        self.upper_arm.lower_bound = -43
+        self.upper_arm.upper_bound = 209
+        self.upper_arm.midpoint = self.upper_arm.position
 
         # arm lengths in mm
         self.lower_arm.length = 160
-        self.upper_arm.length = 110
+        self.upper_arm.length = 130
+        self.touchSensor = TouchSensor()
 
         # inverse config
-        self.newton_error = 0.01
+        self.newton_error = 1
+        self.max_iter =  200
 
         # move to initial position
         self.moveArmsAbsolute(self.lower_arm.midpoint, self.upper_arm.midpoint)
@@ -112,6 +110,12 @@ class Arm():
         x = self.lower_arm.length * cos(lower_arm_angle) + self.upper_arm.length * cos(lower_arm_angle + upper_arm_angle)
         y = self.lower_arm.length * sin(lower_arm_angle) + self.upper_arm.length * sin(lower_arm_angle + upper_arm_angle)
         return x, y
+
+    def getPositionWithKnownAngles(self, theta_1, theta_2):
+        
+        x = self.lower_arm.length * cos(theta_1) + self.upper_arm.length * cos(theta_1 + theta_2)
+        y = self.lower_arm.length * sin(theta_1) + self.upper_arm.length * sin(theta_1 + theta_2)
+        return x, y
     
     def getLowerArm(self):
         return self.lower_arm
@@ -130,6 +134,8 @@ class Arm():
         self.stop()
         x, y = self.getPosition()
         print("got position:", x, y)
+
+        sleep(2)
         
         return x, y
 
@@ -142,8 +148,8 @@ class Arm():
         self.upper_arm.position_sp = upper_pos
         self.lower_arm.run_to_abs_pos()
         self.upper_arm.run_to_abs_pos()
-        self.lower_arm.wait_while("running")
-        self.upper_arm.wait_while("running")
+        self.lower_arm.wait_while("running", 360000/self.lower_arm.speed_sp)
+        self.upper_arm.wait_while("running", 360000/self.upper_arm.speed_sp)
 
     def createIntermediatePoints(self, init_x, init_y, end_x, end_y, num_points):
         delta_x = (end_x - init_x)/(num_points)
@@ -162,31 +168,121 @@ class Arm():
         curr_theta_2 = self.getAngleOfArm(self.upper_arm, True)
         for i, (x, y) in enumerate(points):
             d = (x ** 2 + y ** 2 - self.lower_arm.length ** 2 - self.upper_arm.length ** 2)/(2*self.lower_arm.length*self.upper_arm.length)
-            # theta_2 = atan(sqrt(1-d ** 2) / d)
-            theta_2 = acos(d)
-            if (abs(curr_theta_2 - theta_2) < abs(curr_theta_2 + theta_2)):
-                curr_theta_2 = theta_2
+            theta_2_pos = atan(sqrt(1-d ** 2) / d)
+            theta_1_pos = atan(y/x) - atan((self.upper_arm.length*sin(theta_2_pos))/(self.lower_arm.length + self.upper_arm.length*cos(theta_2_pos)))
+            theta_2_neg = pi - atan(-sqrt(1-d ** 2) / d)
+            theta_1_neg = atan(y/x) - atan((self.upper_arm.length*sin(theta_2_neg))/(self.lower_arm.length + self.upper_arm.length*cos(theta_2_neg)))
+            if (abs(curr_theta_2 - theta_2_pos) <= abs(curr_theta_2 - theta_2_neg)):
+                curr_theta_2 = theta_2_pos
+                points[i] = [theta_1_pos, theta_2_pos]
+                print(self.euclideanDistance(*self.getPositionWithKnownAngles(theta_1_pos, theta_2_pos), -100, -100))
             else:
-                curr_theta_2 = -theta_2
-            
-            points[i] = [atan(y/x) - atan((self.upper_arm.length*sin(curr_theta_2))/(self.lower_arm.length + self.upper_arm.length*cos(curr_theta_2))), curr_theta_2]
-        
+                curr_theta_2 = theta_2_neg
+                points[i] = [theta_1_neg, theta_2_neg]
+                print(self.euclideanDistance(*self.getPositionWithKnownAngles(theta_1_neg, theta_2_neg), -100, -100))
+            print("curr theta: ", curr_theta_2)
+
+        # new angles
         return points
     
     def moveToPos(self, type_arg, end_x, end_y):
         init_x, init_y = self.getPosition()
-        print(self.getPosition())
 
-        points = self.createIntermediatePoints(init_x, init_y, end_x, end_y, max(1, int(self.euclideanDistance(init_x, init_y, end_x, end_y) // 10)))
         if type_arg == "anal":
+            points = self.createIntermediatePoints(init_x, init_y, end_x, end_y,  17)
             angles = self.analyticalSolve(points)
+        if type_arg == "num":
+            angles = self.newtonApproach(end_x, end_y)
 
         for theta_1, theta_2 in angles:
             self.moveArmsAbsolute(self.getAbsPosFromTheta(self.lower_arm, theta_1), self.getAbsPosFromTheta(self.upper_arm, theta_2))
         print(self.getPosition())
 
     def moveToMid(self, type_arg):
-        pass
+        init_x, init_y = self.recordLength()
+
+        end_x, end_y = self.recordLength()
+
+        mid_x = (end_x + init_x) / 2
+        mid_y = (init_y + end_y) / 2
+
+        if type_arg == "anal":
+            points = self.createIntermediatePoints(*self.getPosition(), mid_x, mid_y,  17)
+            angles = self.analyticalSolve(points)
+        if type_arg == "num":
+            angles = self.newtonApproach(mid_x, mid_y)
+
+        for theta_1, theta_2 in angles:
+            self.moveArmsAbsolute(self.getAbsPosFromTheta(self.lower_arm, theta_1), self.getAbsPosFromTheta(self.upper_arm, theta_2))
+        print("desired", mid_x, mid_y)
+        print("actual", self.getPosition())
+
+    def velocity_kinematics(self, theta_1, theta_2):
+        j_11 = self.upper_arm.length * cos(theta_1 + theta_2)
+        j_12 = self.upper_arm.length * sin(theta_1 + theta_2)
+        j_21 =  -self.lower_arm.length * cos(theta_1) - self.upper_arm.length * cos(theta_1 + theta_2)
+        j_22 = - self.lower_arm.length * sin(theta_1) - self.upper_arm.length * sin(theta_1 + theta_2)
+        determinant = self.lower_arm.length * self.upper_arm.length * sin(theta_2)
+        
+
+        if (sin(theta_2) == 0):
+          ## what to do when singular configuration met, use a super small value ex: 1e-6
+            determinant = 1e-2
+            
+        determinant_inverse = 1/determinant
+        #perform matrix to get jacobian
+        vel_kin = [
+            [determinant_inverse * j_11, determinant_inverse * j_12],
+            [determinant_inverse * j_21, determinant_inverse * j_22]
+            ]
+
+        return vel_kin
+
+    def newtonApproach(self, target_x, target_y):
+        theta_1 = self.getAngleOfArm(self.lower_arm, True)
+        theta_2 = self.getAngleOfArm(self.upper_arm, True)
+
+        angles = [] #initialize empty arrays
+
+        for i in range(0, self.max_iter): ## or should we be slowly incrementing the x,y till we get to the desired location
+            
+            curr_x, curr_y = self.getPositionWithKnownAngles(theta_1, theta_2) # forward kinematics 
+            print("round", i, "current location x", curr_x, ", current location y", curr_y)
+            error_position = [[float(target_x - curr_x)],[float(target_y - curr_y)]]
+            
+            delta_pos = self.euclideanDistance(curr_x, curr_y, target_x, target_y)
+
+            if(delta_pos < self.newton_error):
+                break
+
+            vel_kin = self.velocity_kinematics(theta_1, theta_2)
+            print("error of the position:", error_position, "distance to end point", delta_pos)
+            delta_theta = [
+                vel_kin[0][0] * error_position[0][0] + vel_kin[0][1] * error_position[1][0],
+                vel_kin[1][0] * error_position[0][0] + vel_kin[1][1] * error_position[1][0]
+            ]
+
+            max_change = 0.5
+
+            if (delta_theta[0] > max_change):
+                delta_theta[0] = max_change
+            elif (delta_theta[0] < -max_change):
+                delta_theta[0] = -max_change
+                
+
+            if (delta_theta[1] > max_change):
+                delta_theta[1] = max_change
+            elif (delta_theta[1] < -max_change):
+                delta_theta[1] = -max_change
+
+
+            theta_1 += delta_theta[0]
+            theta_2 += delta_theta[1]
+            
+            angles.append([theta_1, theta_2])
+
+            print("angles:", theta_1, ',', theta_2)
+        return angles
         
 
 if __name__ == "__main__":

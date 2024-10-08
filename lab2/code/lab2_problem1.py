@@ -2,7 +2,7 @@
 """
 Group Members: Sergey Khlynovskiy, Jerrica Yang
 
-Date: XXX
+Date: 2024-10-06
  
 Brick Number: G2
 
@@ -12,15 +12,15 @@ Problem Number: 1
  
 Brief Program/Problem Description: 
 
-	Need to draw out full workspace of the robot
+	Need to draw out full workspace of the robot.
 
 Brief Solution Summary:
 
-    XXX
+    First created a calibration function to find the upper and lower bounds of the robot. This was adjusted a little bit
+    to make sure the robot is able to use its full range of motion. Then a workspace is drawn out to see where the robot can draw.
 
 Used Resources/Collaborators:
 	https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html
-    https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html
 
 I/we hereby certify that I/we have produced the following solution 
 using only the resources listed above in accordance with the 
@@ -42,12 +42,12 @@ class Arm():
         self.setSpeed(speed)
 
         # calibrated config
-        self.lower_arm.lower_bound = -127
-        self.lower_arm.upper_bound = 75
-        self.lower_arm.midpoint = -1
-        self.upper_arm.lower_bound = -43
-        self.upper_arm.upper_bound = 209
-        self.upper_arm.midpoint = 58
+        self.lower_arm.lower_bound = -24
+        self.lower_arm.upper_bound = 173
+        self.lower_arm.midpoint = 93
+        self.upper_arm.lower_bound = -97
+        self.upper_arm.upper_bound = 161
+        self.upper_arm.midpoint = 12
     
     def __del__(self):
         self.setStopAction("coast")

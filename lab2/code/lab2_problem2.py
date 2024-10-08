@@ -2,7 +2,7 @@
 """
 Group Members: Sergey Khlynovskiy, Jerrica Yang
 
-Date: XXX
+Date: 2024-10-06
  
 Brick Number: G2
 
@@ -12,15 +12,24 @@ Problem Number: 2
  
 Brief Program/Problem Description: 
 
-	Forward kinematics to find position from joint angles
+	Forward kinematics to find position from joint angles.
+    Use this to move joints with theta to find the end effector position.
+    Then record points and find the distance between them. Then record points
+    and find angle between them.
 
 Brief Solution Summary:
 
-    XXX
+    Used simple forward kinematics equations found in the notes. Always position the robot
+    before each run to set that as the origin. This way, when we move the motors we will know how
+    far in radians it has moved from the center point. This will give us the position.
+
+    Implementing part c was done with a button and distance was calculated with euclidean method
+    and angle was found using the tangent of the slopes of the 2 lines.
 
 Used Resources/Collaborators:
 	https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html
     https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html
+    http://ugweb.cs.ualberta.ca/~vis/courses/robotics/assign/a2Arm/lab2Notes.pdf
 
 I/we hereby certify that I/we have produced the following solution 
 using only the resources listed above in accordance with the 
@@ -41,22 +50,21 @@ class Arm():
     def __init__(self, speed = 60, stop_action = "hold"):
         self.lower_arm = ArmPart(OUTPUT_A)
         self.upper_arm = ArmPart(OUTPUT_B)
-        # self.lower_arm = TempMotor()
-        # self.upper_arm = TempMotor()
         self.setStopAction(stop_action)
         self.setSpeed(speed)
 
         # calibrated config
-        self.lower_arm.lower_bound = -117
-        self.lower_arm.upper_bound = 89
-        self.lower_arm.midpoint = -5
-        self.upper_arm.lower_bound = -52
-        self.upper_arm.upper_bound = 201
-        self.upper_arm.midpoint = 54
+        self.lower_arm.lower_bound = -127
+        self.lower_arm.upper_bound = 75
+        # assume we manually put in midpoint each time
+        self.lower_arm.midpoint = self.lower_arm.position
+        self.upper_arm.lower_bound = -43
+        self.upper_arm.upper_bound = 209
+        self.upper_arm.midpoint = self.upper_arm.position
 
         # arm lengths in mm
         self.lower_arm.length = 160
-        self.upper_arm.length = 110
+        self.upper_arm.length = 130
         self.touchSensor = TouchSensor()
 
         # move to initial position
@@ -88,6 +96,7 @@ class Arm():
     def getPosition(self):
         lower_arm_angle = self.getAngleOfArm(self.lower_arm, True)
         upper_arm_angle = self.getAngleOfArm(self.upper_arm, True)
+        print(lower_arm_angle, upper_arm_angle)
         x = self.lower_arm.length * cos(lower_arm_angle) + self.upper_arm.length * cos(lower_arm_angle + upper_arm_angle)
         y = self.lower_arm.length * sin(lower_arm_angle) + self.upper_arm.length * sin(lower_arm_angle + upper_arm_angle)
         return x, y
@@ -107,13 +116,15 @@ class Arm():
         self.upper_arm.position_sp = upper_pos
         self.lower_arm.run_to_abs_pos()
         self.upper_arm.run_to_abs_pos()
-        self.lower_arm.wait_while("running")
-        self.upper_arm.wait_while("running")
+        self.lower_arm.wait_while("running", 360000/self.lower_arm.speed_sp)
+        self.upper_arm.wait_while("running", 360000/self.upper_arm.speed_sp)
         
     def moveWithTheta(self, lower_angle, upper_angle):
         print(self.getPosition())
+        print(self.getAngleOfArm(self.lower_arm), self.getAngleOfArm(self.upper_arm))
         self.moveArmsAbsolute(self.lower_arm.midpoint + lower_angle, self.upper_arm.midpoint + upper_angle)
         print(self.getPosition())
+        print(self.getAngleOfArm(self.lower_arm), self.getAngleOfArm(self.upper_arm))
     
     def euclideanDistance(self, init_x, init_y, end_x, end_y):
         return sqrt((end_x - init_x) ** 2 + (end_y - init_y) ** 2)
@@ -130,13 +141,12 @@ class Arm():
         x, y = self.getPosition()
         print("got position:", x, y)
         
+        sleep(2)
+
         return x, y
 
     def findDistanceBetweenPoints(self):
-        # TODO: change this to touch sensor entering points
         first_x, first_y = self.recordLength()
-
-        sleep(2)
 
         second_x, second_y = self.recordLength()
 
@@ -152,10 +162,8 @@ class Arm():
 
         try:
             first_slope = (first_y - intersect_y)/(first_x - intersect_x)
-            print("first", first_slope)
             second_slope = (second_y - intersect_y)/(second_x - intersect_x)
-            print("second", second_slope)
-            angle = atan(abs(first_slope - second_slope)/(1+first_slope*second_slope))
+            angle = atan(abs(first_slope - second_slope/(1+first_slope*second_slope)))
         except:
             print("division by zero. try some other points")
         print("angle between lines is:" , angle, "radians or ", self.getDegFromRad(angle), "degrees")
@@ -174,7 +182,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     if input_arg == "b":
-        arm.moveWithTheta(-10, 35)
+        x, y = map(int, input("enter theta_lower_arm theta_upper_arm space separated to move to: ").split())
+        arm.moveWithTheta(x, y)
     elif input_arg == "c_dist":
         arm.findDistanceBetweenPoints()
     elif input_arg == "c_angle":
