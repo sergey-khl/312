@@ -8,7 +8,7 @@ Brick Number: G2
 
 Lab Number: 3
 
-Problem Number: 1
+Problem Number: 2
  
 Brief Program/Problem Description: 
 
@@ -32,6 +32,8 @@ from time import sleep
 from math import pi, cos, sin, sqrt, atan, acos, atan2, copysign
 from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
 from ev3dev2.sensor.lego import TouchSensor
+from ev3dev2.sensor.port import LegoPort
+from ev3dev2.sensor import Sensor
 
 class ArmPart(LargeMotor):
     def __init__(self, *args, **kwargs):
@@ -44,13 +46,18 @@ class Arm():
         self.setStopAction(stop_action)
         self.setSpeed(speed)
 
+        self.cam = LegoPort()
+        self.cam.mode = 'auto'
+
+        sleep(2)
+
         # calibrated config
         # assume we manually put in midpoint each time
         self.lower_arm.midpoint = self.lower_arm.position
         self.upper_arm.midpoint = self.upper_arm.position
         self.lower_arm.duty_cycle_sp = 0
         self.upper_arm.duty_cycle_sp = 0
-        self.default_duty = 20
+        self.default_duty = 25
 
         # arm lengths in mm
         self.lower_arm.length = 160
@@ -178,9 +185,9 @@ class Arm():
             print("OLD ANGLE ", curr_theta_1, curr_theta_2)
             theta_1_slope = theta_1 - curr_theta_1
             theta_2_slope = theta_2 - curr_theta_2
-            rate = abs(theta_2_slope/theta_1_slope)
+            rate = theta_2_slope/theta_1_slope
 
-            rate = max(9/self.default_duty, min(20/self.default_duty, rate))
+            rate = max(self.default_duty/10, min(25/self.default_duty, abs(rate)))
 
             lower_speed = self.default_duty * copysign(1, theta_1_slope)
             upper_speed = self.default_duty * rate * copysign(1, theta_2_slope)
@@ -189,18 +196,19 @@ class Arm():
             self.upper_arm.duty_cycle_sp = upper_speed
 
             while self.euclideanDistance(*self.getPosition(), *points[i]) > 5 and (self.lower_arm.duty_cycle != 0 or self.upper_arm.duty_cycle_sp != 0):
+                print(self.euclideanDistance(*self.getPosition(), *points[i]), (self.getAngleOfArm(self.lower_arm, True), theta_1), (self.getAngleOfArm(self.upper_arm, True), theta_2))
+
                 if abs(self.getAngleOfArm(self.lower_arm, True) - theta_1) < 0.1:
                     self.lower_arm.duty_cycle_sp = 0
                 if abs(self.getAngleOfArm(self.upper_arm, True) - theta_2) < 0.1:
                     self.upper_arm.duty_cycle_sp = 0
-                print(self.euclideanDistance(*self.getPosition(), *points[i]), points[i], (self.getAngleOfArm(self.lower_arm, True), theta_1), (self.getAngleOfArm(self.upper_arm, True), theta_2))
-                print("lower speed", lower_speed, "upper speed", upper_speed, abs(self.getAngleOfArm(self.lower_arm, True) - theta_1), abs(self.getAngleOfArm(self.upper_arm, True) - theta_2))
 
 
-            curr_theta_1 = self.getAngleOfArm(self.lower_arm, True)
-            curr_theta_2 = self.getAngleOfArm(self.upper_arm, True)
+            curr_theta_1 = theta_1
+            curr_theta_2 = theta_2
 
-        self.stop()
+        self.upper_arm.wait_while("running", 360000/self.upper_arm.speed_sp)
+        self.lower_arm.wait_while("running", 360000/self.lower_arm.speed_sp)
 
 
     def velocity_kinematics(self, theta_1, theta_2):
