@@ -41,7 +41,7 @@ CMPUT 312 collaboration policy.
 
 import sys
 from time import sleep
-from math import pi, cos, sin, sqrt, atan, acos
+from math import pi, cos, sin, sqrt, atan, acos, atan2
 from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
 from ev3dev2.sensor.lego import TouchSensor
 
@@ -168,19 +168,20 @@ class Arm():
         curr_theta_2 = self.getAngleOfArm(self.upper_arm, True)
         for i, (x, y) in enumerate(points):
             d = (x ** 2 + y ** 2 - self.lower_arm.length ** 2 - self.upper_arm.length ** 2)/(2*self.lower_arm.length*self.upper_arm.length)
+            print("d: ", d)
             theta_2_pos = atan(sqrt(1-d ** 2) / d)
-            theta_1_pos = atan(y/x) - atan((self.upper_arm.length*sin(theta_2_pos))/(self.lower_arm.length + self.upper_arm.length*cos(theta_2_pos)))
+            theta_1_pos = atan2(y, x) - atan((self.upper_arm.length*sin(theta_2_pos))/(self.lower_arm.length + self.upper_arm.length*cos(theta_2_pos)))
             theta_2_neg = pi - atan(-sqrt(1-d ** 2) / d)
-            theta_1_neg = atan(y/x) - atan((self.upper_arm.length*sin(theta_2_neg))/(self.lower_arm.length + self.upper_arm.length*cos(theta_2_neg)))
+            theta_1_neg = atan2(y, x) - atan((self.upper_arm.length*sin(theta_2_neg))/(self.lower_arm.length + self.upper_arm.length*cos(theta_2_neg)))
             if (abs(curr_theta_2 - theta_2_pos) <= abs(curr_theta_2 - theta_2_neg)):
                 curr_theta_2 = theta_2_pos
                 points[i] = [theta_1_pos, theta_2_pos]
-                print(self.euclideanDistance(*self.getPositionWithKnownAngles(theta_1_pos, theta_2_pos), -100, -100))
+                print(self.euclideanDistance(*self.getPositionWithKnownAngles(theta_1_pos, theta_2_pos), -100, -100), self.getPositionWithKnownAngles(theta_1_pos, theta_2_pos))
             else:
                 curr_theta_2 = theta_2_neg
                 points[i] = [theta_1_neg, theta_2_neg]
-                print(self.euclideanDistance(*self.getPositionWithKnownAngles(theta_1_neg, theta_2_neg), -100, -100))
-            print("curr theta: ", curr_theta_2)
+                print(self.euclideanDistance(*self.getPositionWithKnownAngles(theta_1_neg, theta_2_neg), -100, -100), self.getPositionWithKnownAngles(theta_1_neg, theta_2_neg))
+            print("curr theta: ", curr_theta_2, "pos", theta_2_pos, "neg", theta_2_neg)
 
         # new angles
         return points

@@ -37,7 +37,7 @@ CMPUT 312 collaboration policy.
 """
 
 import sys
-from math import pi, cos, sin, sqrt, atan
+from math import pi, cos, sin, sqrt, atan2
 from time import sleep
 from ev3dev2.motor import LargeMotor, SpeedPercent, OUTPUT_A, OUTPUT_B
 from ev3dev2.sensor.lego import TouchSensor
@@ -161,9 +161,12 @@ class Arm():
         second_x,second_y = self.recordLength()
 
         try:
-            first_slope = (first_y - intersect_y)/(first_x - intersect_x)
-            second_slope = (second_y - intersect_y)/(second_x - intersect_x)
-            angle = atan(abs(first_slope - second_slope/(1+first_slope*second_slope)))
+            first_x_diff = first_x - intersect_x
+            first_y_diff = first_y - intersect_y
+            second_x_diff = second_x - intersect_x
+            second_y_diff = second_y - intersect_y
+
+            angle = atan2(second_y_diff*first_x_diff-second_x_diff*first_y_diff, second_x_diff*first_x_diff+second_y_diff*first_y_diff)
         except:
             print("division by zero. try some other points")
         print("angle between lines is:" , angle, "radians or ", self.getDegFromRad(angle), "degrees")
