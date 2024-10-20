@@ -174,7 +174,7 @@ class Arm():
         self.lower_arm.length = 160
         self.upper_arm.length = 45
 
-        self.error_tol = 40
+        self.error_tol = 30
         self.max_iter = 1000
         self.prev_y = None
         self.prev_theta_1 = None
@@ -205,33 +205,46 @@ class Arm():
         return sqrt((end_x - init_x) ** 2 + (end_y - init_y) ** 2)
 
     def initializeJacobian(self, theta_1, theta_2):
-        # arm.prev_theta_1, arm.prev_theta_2 = [prev_theta_1, prev_theta_2]
         self.prev_y = np.array([[tracker.point[0]], [tracker.point[1]]])
-        server.sendAngles(theta_1, theta_2)
+
+        delta_q = server.sendAngles(theta_1, theta_2)
+        theta_1, theta_2 = map(float, delta_q.split(","))
+        delta_q = np.array([[theta_1], [theta_2]])
+
         new_y = np.array([[tracker.point[0]], [tracker.point[1]]])
         delta_y = new_y - self.prev_y
-        self.jacobian = np.array([[delta_y[0][0]/theta_1, delta_y[0][0]/theta_2], [delta_y[1][0]/theta_1, delta_y[1][0]/theta_2]])
+        self.jacobian = np.array([[delta_y[0][0]/delta_q[0][0], delta_y[0][0]/delta_q[1][0]], [delta_y[1][0]/delta_q[0][0], delta_y[1][0]/delta_q[1][0]]])
 
-    def findNextAngles(self, curr_u, curr_v, target_u, target_v, alpha = 1):
+    def findNextAngles(self, curr_u, curr_v, target_u, target_v):
         error_distance = self.euclideanDistance(curr_u,curr_v, target_u, target_v)
         print(error_distance)
         if error_distance < self.error_tol:
-            return None
+            return False
 
         delta_y = np.subtract(np.array([[curr_u], [curr_v]]), self.prev_y)
         self.prev_y = np.array([[curr_u], [curr_v]])
         error = np.subtract(np.array([[target_u], [target_v]]), self.prev_y)
 
         print("DELTA Y ", delta_y)
-        print("JACOBIAN", self.jacobian)
+        print("JACOBIAN", np.linalg.cond(self.jacobian))
         delta_q = np.linalg.pinv(self.jacobian) @ error
         print("DELTA Q ", delta_q)
         delta_q = np.clip(delta_q, -25, 25)
 
-        # self.jacobian = self.jacobian + alpha * np.divide((delta_y - self.jacobian@delta_q), np.transpose(delta_q) @ delta_q) @ np.transpose(delta_q)
+        # find delta_q from the amount actually moved
+        delta_q = server.sendAngles(delta_q[0][0], delta_q[1][0])
+
+        if delta_q == "RESET":
+            out = input("enter space separated perturbation of theta_1 theta_2")
+            arm.initializeJacobian(*map(int, out.split(" ")))
+        else:
+            theta_1, theta_2 = map(float, delta_q.split(","))
+            delta_q = np.array([[theta_1], [theta_2]])
+            alpha = min(400, error_distance) / 400
+            self.jacobian = self.jacobian + alpha * np.divide((delta_y - self.jacobian@delta_q), np.transpose(delta_q) @ delta_q) @ np.transpose(delta_q)
 
 
-        return delta_q[0][0], delta_q[1][0]
+        return True
 
 if __name__ == "__main__":
     arm = Arm()
@@ -251,15 +264,9 @@ if __name__ == "__main__":
             print("could not find point or goal, try again...")
             continue
         arm.initializeJacobian(*map(int, out.split(" ")))
-        while True:
-            # out wont be RESET on first update
-            angles = arm.findNextAngles(*tracker.point[:2], *tracker.goal[:2])
-            if angles == None:
-                break
-            out = server.sendAngles(*angles)
-            if (out == "RESET"):
-                out = input("enter space separated perturbation of theta_1 theta_2")
-                arm.initializeJacobian(*map(int, out.split(" ")))
+        go = True
+        while go:
+            go = arm.findNextAngles(*tracker.point[:2], *tracker.goal[:2])
 
         server.sendTermination()
         

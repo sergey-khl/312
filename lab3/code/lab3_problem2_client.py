@@ -112,11 +112,12 @@ class Client:
         return data
 
     # Sends a message to the server letting it know that it is ready for another angle
-    def sendNext(self):
-        self.s.send("NEXT".encode("UTF-8"))
+    def sendNext(self, delta_theta_1, delta_theta_2):
+        self.s.send((str(delta_theta_1) + "," + str(delta_theta_2)).encode("UTF-8"))
 
     # Sends a message to the server letting it know that the movement of the motors was executed without any inconvenience.
     def sendDone(self):
+        print("GOT TO POINT")
         self.s.send("DONE".encode("UTF-8"))
 
     # Sends a message to the server letting it know that there was an isse during the execution of the movement (obstacle avoided) and that the initial jacobian should be recomputed (Visual servoing started from scratch)
@@ -135,12 +136,14 @@ if __name__ == "__main__":
     while True:
         angles = client.pollData()
         theta_1, theta_2 = map(float, angles.split(","))
-        print(theta_1, theta_2)
-        print(arm.lower_arm.position, arm.lower_arm.midpoint)
+        prev_theta_1 = arm.getAngleOfArm(arm.lower_arm)
+        prev_theta_2 = arm.getAngleOfArm(arm.upper_arm)
         succeeded = arm.moveArmsAbsolute(arm.lower_arm.position + theta_1, arm.upper_arm.position + theta_2)
-        print(arm.lower_arm.position, arm.lower_arm.midpoint)
+        new_theta_1 = arm.getAngleOfArm(arm.lower_arm)
+        new_theta_2 = arm.getAngleOfArm(arm.upper_arm)
+
         if succeeded:
-            client.sendNext()
+            client.sendNext(new_theta_1 - prev_theta_1, new_theta_2 - prev_theta_2)
         else:
             client.sendReset()
 
