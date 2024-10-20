@@ -38,12 +38,12 @@ from math import atan2, sin, cos, sqrt, pi, copysign
 
 #####HSV Colour Ranges#################
 #If the ball is red (0-10) or (170-180)
-redLowMask = (0,10, 200)
+redLowMask = (0,25, 220)
 redHighMask = (179, 255, 255)
 
 #If the ball is blue
 blueLowMask = (80, 25, 100)
-blueHighMask = (160, 255, 200)
+blueHighMask = (160, 255, 220)
 ########################################
 
 # This class handles the Server side of the comunication between the laptop and the brick.
@@ -71,11 +71,10 @@ class Server:
     def sendAngles(self, theta_1, theta_2):
         # Format in which the client expects the data: "angle1,angle2"
         data = str(theta_1) + "," + str(theta_2)
-        print("Sending Data: (" + data + ") to robot.")
         self.cs.send(data.encode("UTF-8"))
         # Waiting for the client (ev3 brick) to let the server know that it is done moving
         reply = self.cs.recv(128).decode("UTF-8")
-        print("REPLY", reply)
+        return reply
 
     # Sends a termination message to the client. This will cause the client to exit "cleanly", after stopping the motors.
     def sendTermination(self):
@@ -175,14 +174,17 @@ class Arm():
         self.lower_arm.length = 160
         self.upper_arm.length = 45
 
-        self.error_tol = 50
+        self.error_tol = 40
         self.max_iter = 1000
         self.prev_y = None
+        self.prev_theta_1 = None
+        self.prev_theta_2 = None
 
         #initialize jacobian
         # found using method in report
-        self.jacobian = np.array([[120, 42.9], [24, 8.6]])
-        self.jacobian = np.eye(2)
+        # self.jacobian = np.array([[120, 42.9], [24, 8.6]])
+        # self.jacobian = np.eye(2)
+        self.jacobian = None
 
     def getPositionWithKnownAngles(self, theta_1, theta_2):
         x = self.lower_arm.length * cos(theta_1) + self.upper_arm.length * cos(theta_1 + theta_2)
@@ -202,25 +204,32 @@ class Arm():
     def euclideanDistance(self, init_x, init_y, end_x, end_y):
         return sqrt((end_x - init_x) ** 2 + (end_y - init_y) ** 2)
 
-    def jacobianCalc(self, curr_u, curr_v, target_u, target_v, reset, alpha = 1):
+    def initializeJacobian(self, theta_1, theta_2):
+        # arm.prev_theta_1, arm.prev_theta_2 = [prev_theta_1, prev_theta_2]
+        self.prev_y = np.array([[tracker.point[0]], [tracker.point[1]]])
+        server.sendAngles(theta_1, theta_2)
+        new_y = np.array([[tracker.point[0]], [tracker.point[1]]])
+        delta_y = new_y - self.prev_y
+        self.jacobian = np.array([[delta_y[0][0]/theta_1, delta_y[0][0]/theta_2], [delta_y[1][0]/theta_1, delta_y[1][0]/theta_2]])
+
+    def findNextAngles(self, curr_u, curr_v, target_u, target_v, alpha = 1):
         error_distance = self.euclideanDistance(curr_u,curr_v, target_u, target_v)
         print(error_distance)
         if error_distance < self.error_tol:
             return None
 
-        if self.prev_y is not None:
-            delta_y = np.subtract(self.prev_y, np.array([[curr_u], [curr_v]]))
-        else:
-            delta_y = np.array([[target_u - curr_u], [target_v - curr_v]])
-
+        delta_y = np.subtract(np.array([[curr_u], [curr_v]]), self.prev_y)
         self.prev_y = np.array([[curr_u], [curr_v]])
+        error = np.subtract(np.array([[target_u], [target_v]]), self.prev_y)
 
+        print("DELTA Y ", delta_y)
+        print("JACOBIAN", self.jacobian)
+        delta_q = np.linalg.pinv(self.jacobian) @ error
+        print("DELTA Q ", delta_q)
+        delta_q = np.clip(delta_q, -25, 25)
 
-        delta_q = np.linalg.inv(self.jacobian) @ delta_y
-        print(delta_q)
-        delta_q = np.clip(delta_q, -5, 5)
+        # self.jacobian = self.jacobian + alpha * np.divide((delta_y - self.jacobian@delta_q), np.transpose(delta_q) @ delta_q) @ np.transpose(delta_q)
 
-        self.jacobian = self.jacobian + alpha * np.divide((delta_y - self.jacobian@delta_q), np.transpose(delta_q) @ delta_q + 1e-2) @ np.transpose(delta_q)
 
         return delta_q[0][0], delta_q[1][0]
 
@@ -228,26 +237,29 @@ if __name__ == "__main__":
     arm = Arm()
 
     tracker = Tracker('b', 'r')
-    # while True:
-    #     print("Point is at: "+str(tracker.point))
-    #     print("Goal is at: "+str(tracker.goal))
-    #     time.sleep(2)
 
     host = "169.254.128.117"
     port = 9999
     server = Server(host, port)
 
     while True:
-        out = input("enter anything to init or q to quit")
+        out = input("enter space separated initial perturbation of theta_1 theta_2 to init or q to quit")
         if out == "q":
             break
         print(*tracker.point, *tracker.goal)
         if all(i == 0 for i in tracker.point) or all(i == 0 for i in tracker.goal):
             print("could not find point or goal, try again...")
             continue
-        angles = arm.jacobianCalc(*tracker.point[:2], *tracker.goal[:2], False)
-        while angles:
+        arm.initializeJacobian(*map(int, out.split(" ")))
+        while True:
+            # out wont be RESET on first update
+            angles = arm.findNextAngles(*tracker.point[:2], *tracker.goal[:2])
+            if angles == None:
+                break
             out = server.sendAngles(*angles)
-            angles = arm.jacobianCalc(*tracker.point[:2], *tracker.goal[:2], out == "RETURN")
+            if (out == "RESET"):
+                out = input("enter space separated perturbation of theta_1 theta_2")
+                arm.initializeJacobian(*map(int, out.split(" ")))
+
         server.sendTermination()
         

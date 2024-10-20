@@ -134,10 +134,12 @@ if __name__ == "__main__":
     # arm.poll()
     while True:
         angles = client.pollData()
-        print(angles)
         theta_1, theta_2 = map(float, angles.split(","))
-        out = arm.moveArmsAbsolute(arm.getAngleOfArm(arm.lower_arm) + theta_1, arm.getAngleOfArm(arm.upper_arm) + theta_2)
-        if out:
+        print(theta_1, theta_2)
+        print(arm.lower_arm.position, arm.lower_arm.midpoint)
+        succeeded = arm.moveArmsAbsolute(arm.lower_arm.position + theta_1, arm.upper_arm.position + theta_2)
+        print(arm.lower_arm.position, arm.lower_arm.midpoint)
+        if succeeded:
             client.sendNext()
         else:
             client.sendReset()
