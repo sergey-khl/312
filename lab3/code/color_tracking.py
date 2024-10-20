@@ -17,14 +17,6 @@ redHighMask = (179, 255, 255)
 #If the ball is blue
 blueLowMask = (80, 80, 145)
 blueHighMask = (160, 190, 255)
-
-#If the ball is orange
-orangeLowMask = (5, 50, 50)
-orangeHighMask = (20, 255, 255)
-
-#If the ball is green
-greenLowMask= (90, 50, 50)
-greenHighMask= (150, 255, 255)
 ########################################
 
 class Tracker:

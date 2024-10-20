@@ -52,10 +52,7 @@ class Arm():
 
         # arm lengths in mm
         self.lower_arm.length = 160
-        self.upper_arm.length = 130
-
-        # inverse config
-        self.max_iter =  200
+        self.upper_arm.length = 85
     
     def __del__(self):
         self.setStopAction("coast")
@@ -89,22 +86,6 @@ class Arm():
         y = self.lower_arm.length * sin(theta_1) + self.upper_arm.length * sin(theta_1 + theta_2)
         return x, y
     
-    def recordLength(self):
-        self.setStopAction("coast")
-        self.stop()
-        while not self.touchSensor.is_pressed:
-            print("move the arm and press button")
-            sleep(1)
-            
-        self.setStopAction("hold")
-        self.stop()
-        x, y = self.getPosition()
-        print("got position:", x, y)
-
-        sleep(2)
-        
-        return x, y
-
     def stop(self):
         self.lower_arm.stop()
         self.upper_arm.stop()
@@ -144,6 +125,8 @@ class Arm():
     def moveStraight(self, end_x, end_y):
         init_x, init_y = self.getPosition()
         points = self.createIntermediatePoints(init_x, init_y, end_x, end_y,  17)
+        print(points)
+        print("============================")
         angles = self.analyticalSolve(points)
 
         curr_theta_1 = self.getAngleOfArm(self.lower_arm, True)
@@ -159,7 +142,7 @@ class Arm():
             self.setSpeed(lower_speed, upper_speed)
 
             count = 0
-            while self.euclideanDistance(*self.getPosition(), *points[i]) > 5 and (self.lower_arm.duty_cycle != 0 or self.upper_arm.duty_cycle_sp != 0):
+            while self.euclideanDistance(*self.getPosition(), *points[i]) > 5 and (self.lower_arm.duty_cycle_sp != 0 or self.upper_arm.duty_cycle_sp != 0):
                 if copysign(1, theta_1_delta) == copysign(1, self.getAngleOfArm(self.lower_arm, True) - theta_1):
                     lower_speed = 0
                 else:
@@ -175,9 +158,9 @@ class Arm():
 
             curr_theta_1 = theta_1
             curr_theta_2 = theta_2
+            print(self.getPosition())
 
         self.stop()
-        print(self.getPosition())
 
 if __name__ == "__main__":
     arm = Arm()
