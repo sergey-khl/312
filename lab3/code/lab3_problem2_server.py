@@ -38,12 +38,12 @@ from math import atan2, sin, cos, sqrt, pi, copysign
 
 #####HSV Colour Ranges#################
 #If the ball is red (0-10) or (170-180)
-redLowMask = (0,80, 200)
+redLowMask = (0,10, 200)
 redHighMask = (179, 255, 255)
 
 #If the ball is blue
-blueLowMask = (80, 80, 145)
-blueHighMask = (160, 190, 255)
+blueLowMask = (80, 25, 100)
+blueHighMask = (160, 255, 200)
 ########################################
 
 # This class handles the Server side of the comunication between the laptop and the brick.
@@ -132,7 +132,7 @@ class Tracker:
 
     def GetLocation(self, frame, color):
         # Uncomment for gaussian blur
-        # blurred = cv2.GaussianBlur(frame, (5, 5), 0)
+        blurred = cv2.GaussianBlur(frame, (5, 5), 0)
         # blurred = cv2.medianBlur(frame,11)
         blurred = frame
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
