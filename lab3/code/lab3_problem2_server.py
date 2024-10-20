@@ -177,10 +177,12 @@ class Arm():
 
         self.error_tol = 50
         self.max_iter = 1000
+        self.prev_y = None
 
         #initialize jacobian
         # found using method in report
         self.jacobian = np.array([[120, 42.9], [24, 8.6]])
+        self.jacobian = np.eye(2)
 
     def getPositionWithKnownAngles(self, theta_1, theta_2):
         x = self.lower_arm.length * cos(theta_1) + self.upper_arm.length * cos(theta_1 + theta_2)
@@ -200,26 +202,25 @@ class Arm():
     def euclideanDistance(self, init_x, init_y, end_x, end_y):
         return sqrt((end_x - init_x) ** 2 + (end_y - init_y) ** 2)
 
-    def jacobianCalc(self, curr_u, curr_v, target_u, target_v, alpha = 1):
+    def jacobianCalc(self, curr_u, curr_v, target_u, target_v, reset, alpha = 1):
         error_distance = self.euclideanDistance(curr_u,curr_v, target_u, target_v)
         print(error_distance)
         if error_distance < self.error_tol:
             return None
 
-        delta_y = np.array([[target_u - curr_u], [target_v - curr_v]])
+        if self.prev_y is not None:
+            delta_y = np.subtract(self.prev_y, np.array([[curr_u], [curr_v]]))
+        else:
+            delta_y = np.array([[target_u - curr_u], [target_v - curr_v]])
+
+        self.prev_y = np.array([[curr_u], [curr_v]])
+
 
         delta_q = np.linalg.inv(self.jacobian) @ delta_y
+        print(delta_q)
         delta_q = np.clip(delta_q, -5, 5)
 
-            # added_matrix = [[alpha * dy_j_min_k_delta[0]/norm_product],
-            #                 [alpha * dy_j_min_k_delta[1]/norm_product]]
-
-            # update_jacobian = [[added_matrix[0][0] * delta_theta_1, added_matrix[0][0] * delta_theta_2],
-            #                     [added_matrix[1][0] * delta_theta_1, added_matrix[1][0] * delta_theta_2]]
-            
-        self.jacobian = self.jacobian + alpha * np.divide((delta_y - self.jacobian*delta_q), np.transpose(delta_q) @ delta_q) @ delta_q
-            # next_jacobian =  [[prev_jacob[0][0] + update_jacobian[0][0], prev_jacob[0][1] + update_jacobian[0][1]],
-            #                 [prev_jacob[1][0] + update_jacobian[1][0], prev_jacob[1][1] + update_jacobian[1][1]]]
+        self.jacobian = self.jacobian + alpha * np.divide((delta_y - self.jacobian@delta_q), np.transpose(delta_q) @ delta_q + 1e-2) @ np.transpose(delta_q)
 
         return delta_q[0][0], delta_q[1][0]
 
@@ -244,9 +245,9 @@ if __name__ == "__main__":
         if all(i == 0 for i in tracker.point) or all(i == 0 for i in tracker.goal):
             print("could not find point or goal, try again...")
             continue
-        angles = arm.jacobianCalc(*tracker.point[:2], *tracker.goal[:2])
+        angles = arm.jacobianCalc(*tracker.point[:2], *tracker.goal[:2], False)
         while angles:
-            server.sendAngles(*angles)
-            angles = arm.jacobianCalc(*tracker.point[:2], *tracker.goal[:2])
+            out = server.sendAngles(*angles)
+            angles = arm.jacobianCalc(*tracker.point[:2], *tracker.goal[:2], out == "RETURN")
         server.sendTermination()
         

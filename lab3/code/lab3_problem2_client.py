@@ -80,8 +80,9 @@ class Arm():
         self.upper_arm.position_sp = upper_pos
         self.lower_arm.run_to_abs_pos()
         self.upper_arm.run_to_abs_pos()
-        self.lower_arm.wait_while("running", 360000/self.lower_arm.speed_sp)
-        self.upper_arm.wait_while("running", 360000/self.upper_arm.speed_sp)
+        out_l = self.lower_arm.wait_while("running", 360000/self.lower_arm.speed_sp)
+        out_u = self.upper_arm.wait_while("running", 360000/self.upper_arm.speed_sp)
+        return out_l and out_u
 
     # helper function to find the initial jacobian
     def poll(self):
@@ -135,5 +136,9 @@ if __name__ == "__main__":
         angles = client.pollData()
         print(angles)
         theta_1, theta_2 = map(float, angles.split(","))
-        arm.moveArmsAbsolute(arm.getAngleOfArm(arm.lower_arm) + theta_1, arm.getAngleOfArm(arm.upper_arm) + theta_2)
-        client.sendNext()
+        out = arm.moveArmsAbsolute(arm.getAngleOfArm(arm.lower_arm) + theta_1, arm.getAngleOfArm(arm.upper_arm) + theta_2)
+        if out:
+            client.sendNext()
+        else:
+            client.sendReset()
+
