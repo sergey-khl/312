@@ -235,6 +235,8 @@ class Arm():
         # find the change from the position of the end effector to the goal location
         error = np.subtract(np.array([[target_u], [target_v]]), self.prev_y)
 
+        print(np.linalg.cond(self.jacobian))
+        print(self.jacobian)
         delta_q = np.linalg.pinv(self.jacobian) @ error
         # clip angles from -25 to 25
         delta_q = np.clip(delta_q, -25, 25)
@@ -252,7 +254,7 @@ class Arm():
             arm.initializeJacobian(server, tracker)
         else:
             alpha = min(400, error_distance) / 400
-            if self.broyen:
+            if self.broyden:
                 self.jacobian = self.jacobian + alpha * np.divide((delta_y - self.jacobian@delta_q) @ np.transpose(delta_q), np.transpose(delta_q) @ delta_q)
 
         return True
