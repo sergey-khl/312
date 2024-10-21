@@ -38,7 +38,7 @@ cv.setTrackbarPos(vh, barsWindow, 255)
 
 while(True):
     ret, frame = cap.read()
-    frame = cv.GaussianBlur(frame, (5, 5), 0)
+    # frame = cv.GaussianBlur(frame, (5, 5), 0)
     # frame = cv.medianBlur(frame,11)
     
     # convert to HSV from BGR

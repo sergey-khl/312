@@ -2,7 +2,7 @@
 """
 Group Members: Sergey Khlynovskiy, Jerrica Yang
 
-Date: XXX
+Date: 2024-10-20
  
 Brick Number: G2
 
@@ -12,26 +12,26 @@ Problem Number: 2
  
 Brief Program/Problem Description: 
 
-    XXX
+    need to move a blue point at the end effector to a red circle somewhere else in the robots workspace
 
 Brief Solution Summary:
 
-    XXX
+    For the client part we mostly just read angles from the server and execute. The client also
+    works to initialize the jacobian by moving the lower and upper arm separately and telling the
+    server to record the pixels of the end effector.
 
 Used Resources/Collaborators:
 	https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html
     https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/sensors.html
+    we used the client and color tracking code found on eclass: https://eclass.srv.ualberta.ca/mod/resource/view.php?id=8123643
 
 I/we hereby certify that I/we have produced the following solution 
 using only the resources listed above in accordance with the 
 CMPUT 312 collaboration policy.
 """
 
-from time import sleep
-from math import pi, cos, sin, sqrt, atan, acos, atan2, copysign
 from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_B
 import socket
-import os
 
 class ArmPart(LargeMotor):
     def __init__(self, *args, **kwargs):
@@ -83,14 +83,31 @@ class Arm():
         out_l = self.lower_arm.wait_while("running", 360000/self.lower_arm.speed_sp)
         out_u = self.upper_arm.wait_while("running", 360000/self.upper_arm.speed_sp)
         return out_l and out_u
+    
+    def initializeJacobian(self, client):
+        perturbation_lower = 20
+        perturbation_upper = 20
+        if self.getAngleOfArm(self.lower_arm) > 0:
+            perturbation_lower *= -1
+        if self.getAngleOfArm(self.upper_arm) > 0:
+            perturbation_upper *= -1
 
-    # helper function to find the initial jacobian
-    def poll(self):
-        while True:
-            sleep(1)
-            lower_arm_angle = self.getAngleOfArm(self.lower_arm)
-            upper_arm_angle = self.getAngleOfArm(self.upper_arm)
-            print(lower_arm_angle, upper_arm_angle)
+        # send next tells the server to pickup the data from the camera
+        print("moving lower", self.lower_arm.position, self.upper_arm.position)
+        self.moveArmsAbsolute(self.lower_arm.position + perturbation_lower, self.upper_arm.position)
+        client.sendRecordPoint(perturbation_lower)
+
+        print("moving lower", self.lower_arm.position, self.upper_arm.position)
+        self.moveArmsAbsolute(self.lower_arm.position - perturbation_lower, self.upper_arm.position)
+        client.sendRecordPoint()
+
+        print("moving upper", self.lower_arm.position, self.upper_arm.position)
+        self.moveArmsAbsolute(self.lower_arm.position, self.upper_arm.position + perturbation_upper)
+        client.sendRecordPoint(perturbation_upper)
+
+        print("moving upper", self.lower_arm.position, self.upper_arm.position)
+        self.moveArmsAbsolute(self.lower_arm.position, self.upper_arm.position - perturbation_upper)
+        client.sendRecordPoint()
 
 # This class handles the client side of communication. It has a set of predefined messages to send to the server as well as functionality to poll and decode data.
 class Client:
@@ -111,9 +128,14 @@ class Client:
         print("Data Received")
         return data
 
+    # Sends a message to the server letting it know that it should record with the camera. wait for the ok to continue
+    def sendRecordPoint(self, delta_theta = "RECORD"):
+        self.s.send(str(delta_theta).encode("UTF-8"))
+        print(self.s.recv(128).decode("UTF-8"))
+
     # Sends a message to the server letting it know that it is ready for another angle
-    def sendNext(self, delta_theta_1, delta_theta_2):
-        self.s.send((str(delta_theta_1) + "," + str(delta_theta_2)).encode("UTF-8"))
+    def sendNext(self):
+        self.s.send("NEXT".encode("UTF-8"))
 
     # Sends a message to the server letting it know that the movement of the motors was executed without any inconvenience.
     def sendDone(self):
@@ -132,18 +154,18 @@ if __name__ == "__main__":
     port = 9999
     client = Client(host, port)
     i = 0
-    # arm.poll()
     while True:
         angles = client.pollData()
+        # this means we must initialize the jacobian
+        if angles == "INIT":
+            arm.initializeJacobian(client)
+            continue
+        if angles == "EXIT":
+            break
         theta_1, theta_2 = map(float, angles.split(","))
-        prev_theta_1 = arm.getAngleOfArm(arm.lower_arm)
-        prev_theta_2 = arm.getAngleOfArm(arm.upper_arm)
         succeeded = arm.moveArmsAbsolute(arm.lower_arm.position + theta_1, arm.upper_arm.position + theta_2)
-        new_theta_1 = arm.getAngleOfArm(arm.lower_arm)
-        new_theta_2 = arm.getAngleOfArm(arm.upper_arm)
 
         if succeeded:
-            client.sendNext(new_theta_1 - prev_theta_1, new_theta_2 - prev_theta_2)
+            client.sendNext()
         else:
             client.sendReset()
-

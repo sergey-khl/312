@@ -2,7 +2,7 @@
 """
 Group Members: Sergey Khlynovskiy, Jerrica Yang
 
-Date: XXX
+Date: 2024-10-20
  
 Brick Number: G2
 
@@ -12,11 +12,13 @@ Problem Number: 1
  
 Brief Program/Problem Description: 
 
-    XXX
+    move the end effector of a robot arm in a straight line
 
 Brief Solution Summary:
 
-    XXX
+    we create a straight line of intermediate points and bascially use the analytical method
+    from lab 2 to find the angles. the motors are moved with run_direct to allow both motors
+    to move at the same time so that it is smoother.
 
 Used Resources/Collaborators:
 	https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/stable/motors.html
@@ -27,9 +29,7 @@ using only the resources listed above in accordance with the
 CMPUT 312 collaboration policy.
 """
 
-import sys
-from time import sleep
-from math import pi, cos, sin, sqrt, atan, acos, atan2, copysign
+from math import pi, cos, sin, sqrt, atan2, copysign
 from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_B
 
 class ArmPart(LargeMotor):
@@ -124,13 +124,14 @@ class Arm():
     
     def moveStraight(self, end_x, end_y):
         init_x, init_y = self.getPosition()
+        # create checkpoints in a straight line between the target and current position
         points = self.createIntermediatePoints(init_x, init_y, end_x, end_y,  17)
-        print(points)
-        print("============================")
         angles = self.analyticalSolve(points)
 
         curr_theta_1 = self.getAngleOfArm(self.lower_arm, True)
         curr_theta_2 = self.getAngleOfArm(self.upper_arm, True)
+        # we use run direct here to allow both motors to move at the same time and so
+        # that we dont have to fully stop between checkpoints
         self.lower_arm.run_direct()
         self.upper_arm.run_direct()
         for i, (theta_1, theta_2) in enumerate(angles):
@@ -143,6 +144,7 @@ class Arm():
 
             count = 0
             while self.euclideanDistance(*self.getPosition(), *points[i]) > 5 and (self.lower_arm.duty_cycle_sp != 0 or self.upper_arm.duty_cycle_sp != 0):
+                # we stop moving the motor if it goes beyond the target angle
                 if copysign(1, theta_1_delta) == copysign(1, self.getAngleOfArm(self.lower_arm, True) - theta_1):
                     lower_speed = 0
                 else:
