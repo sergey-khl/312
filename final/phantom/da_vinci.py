@@ -45,11 +45,11 @@ class DaVinci:
             sys.exit('failed to enable within 10 seconds')
 
     def __del__(self):
-        wrench = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+        wrench = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.arm.servo_cf(wrench)
 
     def buttonEvent1(self, data):
-        self.sendData("1," + str(data.buttons[0]) + ",," + str(time.time()))
+        self.sendData("1," + str(data.buttons[0]))
 
     def buttonEvent2(self, data):
         self.sendData("2,"+ str(data.buttons[0]))
