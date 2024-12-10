@@ -1,0 +1,15 @@
+This is the phantom specific code. Not all phantom specific code is used. We mainly just built upon the john hopkins provided base.
+
+Setting up the phantom we followed the following: [instructions](https://github.com/jhu-saw/sawSensablePhantom/blob/main/drivers.md)
+We used the following as a [base](https://github.com/jhu-saw/sawSensablePhantom/tree/devel). The devel branch has better instructions
+on building and running everything. Notably still though the project lacks documentation and many of the files are out of date.
+As such, we tried to use the same offsets but the program did not work with the way they did it. Instead we hardcoded the same
+values into mtsSensableHD.cpp inside the configure function.
+
+To run (assuming everything is already built):
+1. open up 3 terminals and source the devel/setup.bash and edit the ROS_MASTER_URI if necessary.
+2. In one of the terminals run roscore.
+3. In another run `roscd saw_sensable_phantom_config && cd socket-streamer` then
+`rosrun sensable_phantom sensable_phantom -m manager-socket-streamer.json`. Make sure the manager-socket-streamer.json
+has references to the correct ip and port for your unity machine and that you are sending measured_cp.
+4. In the last terminal run `rosrun sensable_phantom da_vinci -a arm -u <ip of unity machine> -p <port for sending other data>`

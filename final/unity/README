@@ -1,0 +1,5 @@
+This is the unity specific code. As mentioned not all unity files are included
+
+We used [dvkr](https://github.com/jhu-dvrk/dvrk-xr) as the base. The only code we changed of theirs
+was the UDPClient.cs which now supports 2 sockets at the same time and the ability to get multiple messages
+out of the queue.

@@ -1,0 +1,3 @@
+For this project we used 2 machines. On one we connect the phantom and run the phantom code. On the other we spin up
+unity and connect the VR headset and run the unity related code. Check out the README's inside each folder
+for the bases that used as this repo only has the files we created or manipulated.
