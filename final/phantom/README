@@ -9,7 +9,7 @@ values into mtsSensableHD.cpp inside the configure function.
 To run (assuming everything is already built):
 1. open up 3 terminals and source the devel/setup.bash and edit the ROS_MASTER_URI if necessary.
 2. In one of the terminals run roscore.
-3. In another run `roscd saw_sensable_phantom_config && cd socket-streamer` then
+3. In the last terminal run `rosrun sensable_phantom da_vinci -a arm -u <ip of unity machine> -p <port for sending other data>`
+4. In another run `roscd saw_sensable_phantom_config && cd socket-streamer` then
 `rosrun sensable_phantom sensable_phantom -m manager-socket-streamer.json`. Make sure the manager-socket-streamer.json
 has references to the correct ip and port for your unity machine and that you are sending measured_cp.
-4. In the last terminal run `rosrun sensable_phantom da_vinci -a arm -u <ip of unity machine> -p <port for sending other data>`
