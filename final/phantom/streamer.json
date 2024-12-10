@@ -1,0 +1,20 @@
+/* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+{
+    "ip": "<ip of unity machine>",
+    "port": "48054",
+    "read-commands": [
+        {
+            "name": "measured_cp",
+            "type": "prmPositionCartesianGet"
+        }
+    ]
+    ,
+    "void-commands": ["hold", "free"]
+    ,
+    "write-commands": [
+        {
+            "name": "servo_cf",
+            "type": "prmPositionJointSet"
+        }
+    ]
+}
